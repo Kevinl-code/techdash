@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Technical Team Dashboard</title>
+<title>Tech Dash</title>
 <link rel="stylesheet" href="/static/app.css">
 </head>
 <body>
@@ -11,41 +11,106 @@
 <div class="user-area"><span id="userName"></span><span id="roleBadge" class="badge"></span><button id="logoutBtn" class="ghost-btn">Sign out</button></div>
 </header>
 <main class="dashboard">
-<section class="welcome-card">
-<div><p class="eyebrow">WORKSPACE</p><h1>Good to have you here.</h1><p class="muted">Access team resources and manage assigned work.</p></div>
-<div class="quick-stat"><strong id="taskCount">0</strong><span>Visible tasks</span></div>
-</section>
-<section class="resource-grid">
-<a id="waCard" class="resource-card" target="_blank" rel="noopener"><span class="icon">◉</span><div><h3>WhatsApp Group</h3><p>Open team communication</p></div></a>
-<a id="canvaCard" class="resource-card" target="_blank" rel="noopener"><span class="icon">◇</span><div><h3>Canva Workspace</h3><p>Open shared design resources</p></div></a>
-<a id="folderCard" class="resource-card" target="_blank" rel="noopener"><span class="icon">□</span><div><h3>Team Folder</h3><p>Open shared files</p></div></a>
-</section>
-<section class="content-grid">
-<div class="panel"><div class="panel-head"><div><p class="eyebrow">TASKS</p><h2>Task Board</h2></div></div><div id="taskList"></div></div>
-<aside id="headPanel" class="panel hidden">
-<div class="panel-head"><div><p class="eyebrow">HEAD ONLY</p><h2>Assign Task</h2></div></div>
-<form id="taskForm" class="stack">
-<input id="taskTitle" placeholder="Task title" required>
-<textarea id="taskDescription" placeholder="Description"></textarea>
-<select id="assignee" required></select>
-<input id="dueDate" type="date">
-<button class="primary-btn" type="submit">Assign task</button>
-</form>
-</aside>
-</section>
-<section id="headManagement" class="panel hidden">
-<div class="panel-head"><div><p class="eyebrow">TEAM MANAGEMENT</p><h2>Members</h2></div></div>
-<form id="memberFormAdmin" class="member-form">
-<input id="newName" placeholder="Name" required><input id="newEmail" type="email" placeholder="Email" required>
-<input id="newPhone" placeholder="Mobile Number" required><input id="newMemberId" placeholder="Team Member ID" required>
-<button class="primary-btn" type="submit">Add member</button>
-</form>
-<div id="memberList"></div>
-</section>
-<section id="auditPanel" class="panel hidden">
-<div class="panel-head"><div><p class="eyebrow">SECURITY</p><h2>Access Audit</h2></div></div>
-<div id="auditList"></div>
-</section>
+  <section class="welcome-card">
+    <div>
+      <p class="eyebrow">WORKSPACE</p>
+      <h1>Good to have you here.</h1>
+      <p class="muted">Access team resources and manage assigned work.</p>
+    </div>
+    <div class="quick-stat">
+      <strong id="taskCount">0</strong>
+      <span>Visible tasks</span>
+    </div>
+  </section>
+
+  <section class="resource-grid">
+    <a id="waCard" class="resource-card" target="_blank" rel="noopener">
+      <span class="icon">◉</span>
+      <div><h3>WhatsApp Group</h3><p>Open team communication</p></div>
+    </a>
+    <a id="canvaCard" class="resource-card" target="_blank" rel="noopener">
+      <span class="icon">◇</span>
+      <div><h3>Canva Workspace</h3><p>Open shared design resources</p></div>
+    </a>
+    <a id="folderCard" class="resource-card" target="_blank" rel="noopener">
+      <span class="icon">□</span>
+      <div><h3>Team Folder</h3><p>Open shared files</p></div>
+    </a>
+  </section>
+
+  <section class="panel calendar-panel">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">SCHEDULE</p>
+        <h2 id="calendarMonthYear">Task Calendar</h2>
+      </div>
+      <div class="calendar-controls">
+        <button id="prevMonth" class="ghost-btn">&lt;</button>
+        <button id="todayBtn" class="ghost-btn">Today</button>
+        <button id="nextMonth" class="ghost-btn">&gt;</button>
+      </div>
+    </div>
+    <div class="calendar-weekdays">
+      <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+    </div>
+    <div id="calendarDays" class="calendar-grid"></div>
+  </section>
+
+  <section class="content-grid">
+    <div class="panel">
+      <div class="panel-head">
+        <div><p class="eyebrow">TASKS</p><h2>Task Board</h2></div>
+      </div>
+      <div id="taskList"></div>
+    </div>
+
+    <aside id="headPanel" class="panel hidden">
+      <div class="panel-head">
+        <div><p class="eyebrow">HEAD ONLY</p><h2>Assign Task</h2></div>
+      </div>
+      <form id="taskForm" class="stack">
+        <input id="taskTitle" placeholder="Task title" required>
+        <textarea id="taskDescription" placeholder="Description"></textarea>
+        <select id="assignee" required></select>
+        <input id="dueDate" type="date">
+        <button class="primary-btn" type="submit">Assign task</button>
+      </form>
+    </aside>
+  </section>
+
+  <section id="headManagement" class="panel hidden">
+    <div class="panel-head">
+      <div><p class="eyebrow">TEAM MANAGEMENT</p><h2>Members</h2></div>
+    </div>
+    <form id="memberFormAdmin" class="member-form">
+      <input id="newName" placeholder="Name" required>
+      <input id="newEmail" type="email" placeholder="Email" required>
+      <input id="newPhone" placeholder="Mobile Number" required>
+      <input id="newMemberId" placeholder="Team Member ID" required>
+      <button class="primary-btn" type="submit">Add member</button>
+    </form>
+    <div id="memberList"></div>
+  </section>
+
+  <section id="auditPanel" class="panel hidden">
+    <div class="panel-head">
+      <div><p class="eyebrow">SECURITY</p><h2>Access Audit Log</h2></div>
+    </div>
+    <div class="table-responsive">
+      <table class="audit-table">
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Action</th>
+            <th>IP Address</th>
+            <th>Timestamp</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="auditList"></tbody>
+      </table>
+    </div>
+  </section>
 </main>
 <script src="/static/dashboard.js"></script>
 </body>
