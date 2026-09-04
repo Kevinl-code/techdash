@@ -265,9 +265,88 @@
                 Due date
             </label>
 
-            <input
-                id="dueDate"
-                type="date">
+           <div class="date-picker-wrapper">
+
+    <label class="field-label">
+        Due date
+    </label>
+
+    <div class="date-input-box" id="datePickerButton">
+
+        <span class="calendar-icon">▣</span>
+
+        <span id="selectedDate">
+            Select due date
+        </span>
+
+        <span class="date-arrow">⌄</span>
+
+    </div>
+
+    <input
+        id="dueDate"
+        type="hidden">
+
+    <div
+        id="datePicker"
+        class="custom-date-picker hidden">
+
+        <div class="date-picker-header">
+
+            <button
+                type="button"
+                id="datePrev">
+                ‹
+            </button>
+
+            <strong id="dateMonth">
+                September 2026
+            </strong>
+
+            <button
+                type="button"
+                id="dateNext">
+                ›
+            </button>
+
+        </div>
+
+        <div class="date-weekdays">
+
+            <span>Su</span>
+            <span>Mo</span>
+            <span>Tu</span>
+            <span>We</span>
+            <span>Th</span>
+            <span>Fr</span>
+            <span>Sa</span>
+
+        </div>
+
+        <div
+            id="dateGrid"
+            class="date-grid">
+        </div>
+
+        <div class="date-picker-footer">
+
+            <button
+                type="button"
+                id="clearDate">
+                Clear
+            </button>
+
+            <button
+                type="button"
+                id="selectToday">
+                Today
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
 
             <button
                 class="primary-btn"
