@@ -1,0 +1,5 @@
+const tabs=document.querySelectorAll(".tab"),headForm=document.querySelector("#headForm"),memberForm=document.querySelector("#memberForm"),msg=document.querySelector("#loginMessage");
+tabs.forEach(tab=>tab.addEventListener("click",()=>{tabs.forEach(t=>t.classList.remove("active"));tab.classList.add("active");const head=tab.dataset.tab==="head";headForm.classList.toggle("hidden",!head);memberForm.classList.toggle("hidden",head);msg.textContent="";}));
+async function post(url,body){const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const d=await r.json();if(!r.ok)throw Error(d.error||"Login failed");return d}
+headForm.addEventListener("submit",async e=>{e.preventDefault();try{await post("/api/login/head",{identifier:headIdentifier.value,password:headPassword.value,mpin:headMpin.value});location.href="/dashboard"}catch(err){msg.textContent=err.message}});
+memberForm.addEventListener("submit",async e=>{e.preventDefault();try{await post("/api/login/member",{email:memberEmail.value,phone:memberPhone.value,team_member_id:memberId.value});location.href="/dashboard"}catch(err){msg.textContent=err.message}});
