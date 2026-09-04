@@ -491,3 +491,35 @@
     }
 
 }
+
+/* Modern date input */
+input[type="date"] {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.045);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 13px;
+    outline: none;
+    color-scheme: dark;
+}
+
+/* White calendar icon */
+input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    opacity: 0.9;
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+}
+
+/* Hover */
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+}
+
+/* Focus */
+input[type="date"]:focus {
+    border-color: rgba(255, 255, 255, 0.35);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.05);
+}
