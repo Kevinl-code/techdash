@@ -1,52 +1,146 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Technical Team Dashboard</title>
-<link rel="stylesheet" href="/static/app.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Technical Team Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/app.css">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
-<header class="topbar">
-<div><p class="eyebrow">TECHNICAL TEAM</p><h2>Command Center</h2></div>
-<div class="user-area"><span id="userName"></span><span id="roleBadge" class="badge"></span><button id="logoutBtn" class="ghost-btn">Sign out</button></div>
-</header>
-<main class="dashboard">
-<section class="welcome-card">
-<div><p class="eyebrow">WORKSPACE</p><h1>Good to have you here.</h1><p class="muted">Access team resources and manage assigned work.</p></div>
-<div class="quick-stat"><strong id="taskCount">0</strong><span>Visible tasks</span></div>
-</section>
-<section class="resource-grid">
-<a id="waCard" class="resource-card" target="_blank" rel="noopener"><span class="icon">◉</span><div><h3>WhatsApp Group</h3><p>Open team communication</p></div></a>
-<a id="canvaCard" class="resource-card" target="_blank" rel="noopener"><span class="icon">◇</span><div><h3>Canva Workspace</h3><p>Open shared design resources</p></div></a>
-<a id="folderCard" class="resource-card" target="_blank" rel="noopener"><span class="icon">□</span><div><h3>Team Folder</h3><p>Open shared files</p></div></a>
-</section>
-<section class="content-grid">
-<div class="panel"><div class="panel-head"><div><p class="eyebrow">TASKS</p><h2>Task Board</h2></div></div><div id="taskList"></div></div>
-<aside id="headPanel" class="panel hidden">
-<div class="panel-head"><div><p class="eyebrow">HEAD ONLY</p><h2>Assign Task</h2></div></div>
-<form id="taskForm" class="stack">
-<input id="taskTitle" placeholder="Task title" required>
-<textarea id="taskDescription" placeholder="Description"></textarea>
-<select id="assignee" required></select>
-<input id="dueDate" type="date">
-<button class="primary-btn" type="submit">Assign task</button>
-</form>
-</aside>
-</section>
-<section id="headManagement" class="panel hidden">
-<div class="panel-head"><div><p class="eyebrow">TEAM MANAGEMENT</p><h2>Members</h2></div></div>
-<form id="memberFormAdmin" class="member-form">
-<input id="newName" placeholder="Name" required><input id="newEmail" type="email" placeholder="Email" required>
-<input id="newPhone" placeholder="Mobile Number" required><input id="newMemberId" placeholder="Team Member ID" required>
-<button class="primary-btn" type="submit">Add member</button>
-</form>
-<div id="memberList"></div>
-</section>
-<section id="auditPanel" class="panel hidden">
-<div class="panel-head"><div><p class="eyebrow">SECURITY</p><h2>Access Audit</h2></div></div>
-<div id="auditList"></div>
-</section>
-</main>
-<script src="/static/dashboard.js"></script>
+  <header class="topbar">
+    <div class="brand-title">
+      <p class="eyebrow"><i data-lucide="terminal" class="icon-sm"></i> TECHNICAL TEAM</p>
+      <h2>Command Center</h2>
+    </div>
+    <div class="user-area">
+      <div class="user-info">
+        <i data-lucide="user" class="icon-sm"></i>
+        <span id="userName"></span>
+      </div>
+      <span id="roleBadge" class="badge"></span>
+      <button id="logoutBtn" class="ghost-btn">
+        <i data-lucide="log-out" class="icon-sm"></i>
+        <span>Sign out</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="dashboard">
+    <section class="welcome-card">
+      <div>
+        <p class="eyebrow"><i data-lucide="layout-grid" class="icon-sm"></i> WORKSPACE</p>
+        <h1>Good to have you here.</h1>
+        <p class="muted">Access team resources and manage assigned work with high velocity.</p>
+      </div>
+      <div class="quick-stat">
+        <strong id="taskCount">0</strong>
+        <span>Visible tasks</span>
+      </div>
+    </section>
+
+    <section class="resource-grid">
+      <a id="waCard" class="resource-card wa-card" target="_blank" rel="noopener">
+        <div class="icon-wrapper">
+          <i data-lucide="message-square" class="resource-icon"></i>
+        </div>
+        <div class="card-content">
+          <h3>WhatsApp Group</h3>
+          <p>Open team communication</p>
+        </div>
+        <i data-lucide="arrow-up-right" class="external-icon"></i>
+      </a>
+
+      <a id="canvaCard" class="resource-card canva-card" target="_blank" rel="noopener">
+        <div class="icon-wrapper">
+          <i data-lucide="palette" class="resource-icon"></i>
+        </div>
+        <div class="card-content">
+          <h3>Canva Workspace</h3>
+          <p>Open shared design resources</p>
+        </div>
+        <i data-lucide="arrow-up-right" class="external-icon"></i>
+      </a>
+
+      <a id="folderCard" class="resource-card folder-card" target="_blank" rel="noopener">
+        <div class="icon-wrapper">
+          <i data-lucide="folder-git-2" class="resource-icon"></i>
+        </div>
+        <div class="card-content">
+          <h3>Team Folder</h3>
+          <p>Open shared files & docs</p>
+        </div>
+        <i data-lucide="arrow-up-right" class="external-icon"></i>
+      </a>
+    </section>
+
+    <section class="content-grid">
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow"><i data-lucide="check-square" class="icon-sm"></i> TASKS</p>
+            <h2>Task Board</h2>
+          </div>
+        </div>
+        <div id="taskList"></div>
+      </div>
+
+      <aside id="headPanel" class="panel hidden">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow"><i data-lucide="shield-alert" class="icon-sm"></i> HEAD ONLY</p>
+            <h2>Assign Task</h2>
+          </div>
+        </div>
+        <form id="taskForm" class="stack">
+          <input id="taskTitle" placeholder="Task title" required>
+          <textarea id="taskDescription" placeholder="Description"></textarea>
+          <select id="assignee" required></select>
+          <input id="dueDate" type="date">
+          <button class="primary-btn" type="submit">
+            <i data-lucide="plus" class="icon-sm"></i> Assign task
+          </button>
+        </form>
+      </aside>
+    </section>
+
+    <section id="headManagement" class="panel hidden">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow"><i data-lucide="users" class="icon-sm"></i> TEAM MANAGEMENT</p>
+          <h2>Members</h2>
+        </div>
+      </div>
+      <form id="memberFormAdmin" class="member-form">
+        <input id="newName" placeholder="Name" required>
+        <input id="newEmail" type="email" placeholder="Email" required>
+        <input id="newPhone" placeholder="Mobile Number" required>
+        <input id="newMemberId" placeholder="Team Member ID" required>
+        <button class="primary-btn" type="submit">
+          <i data-lucide="user-plus" class="icon-sm"></i> Add member
+        </button>
+      </form>
+      <div id="memberList"></div>
+    </section>
+
+    <section id="auditPanel" class="panel hidden">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow"><i data-lucide="shield-check" class="icon-sm"></i> SECURITY</p>
+          <h2>Access Audit</h2>
+        </div>
+      </div>
+      <div id="auditList"></div>
+    </section>
+  </main>
+
+  <script src="/static/dashboard.js"></script>
+  <script>
+    lucide.createIcons();
+  </script>
 </body>
 </html>
