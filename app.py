@@ -311,18 +311,24 @@ def update_task(task_id):
 
 
 @app.get("/api/members")
-@head_required
-def members():
+def get_members():
+
+    if session.get("role") != "head":
+        return jsonify({"error": "Forbidden"}), 403
+
     result = (
-        supabase.table("users")
-        .select("id,name,email,phone,team_member_id,active")
+        supabase
+        .table("users")
+        .select(
+            "id,name,email,phone,team_member_id,active"
+        )
         .eq("role", "member")
         .order("team_member_id")
         .execute()
     )
-    return jsonify(result.data or [])
 
-
+    return jsonify(result.data)
+    
 @app.post("/api/members")
 @head_required
 def create_member():
