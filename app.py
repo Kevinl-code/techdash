@@ -1131,70 +1131,68 @@ def create_task():
 
         saved_task = inserted.data[0]
 
-    except Exception as exc:
-
-        print(
-            "CREATE TASK ERROR:",
-            repr(exc)
-        )
-
-        return jsonify({
-            "error":
-                "Task could not be created"
-        }), 500
-
-    task_id = saved_task["id"]
-
-    # -----------------------------------------------------
-    # CREATE ASSIGNMENT ROWS
-    # -----------------------------------------------------
-
-    assignment_payload = []
-
-    for member in members:
-
-        assignment_payload.append({
-            "task_id": task_id,
-            "member_id": member["id"],
-            "member_name": member["name"],
-            "member_email": member["email"],
-            "status": "Assigned",
-            "notification_sent": False,
-        })
-
-    try:
-
-        assignment_insert = (
-            supabase
-            .table("task_assignments")
-            .insert(
-                assignment_payload
+     except Exception as exc:
+    
+            print(
+                "CREATE TASK ERROR:",
+                repr(exc)
             )
-            .execute()
-        )
-
-        if len(
-            assignment_insert.data or []
-        ) != len(members):
-
-            raise RuntimeError(
-                "Assignment rows were not created"
+    
+            return jsonify({
+                "error":
+                    "Task could not be created"
+            }), 500
+    
+        task_id = saved_task["id"]
+    
+        # -----------------------------------------------------
+        # CREATE ASSIGNMENT ROWS
+        # -----------------------------------------------------
+    
+        assignment_payload = []
+    
+        for member in members:
+    
+            assignment_payload.append({
+                "task_id": task_id,
+                "member_id": member["id"],
+                "member_name": member["name"],
+                "member_email": member["email"],
+                "status": "Assigned",
+                "notification_sent": False,
+            })
+    
+            try:
+    
+            assignment_insert = (
+                supabase
+                .table("task_assignments")
+                .insert(assignment_payload)
+                .execute()
             )
-
-    except Exception as exc:
-
+    
+            if len(
+                assignment_insert.data or []
+            ) != len(members):
+    
+                raise RuntimeError(
+                    "Assignment rows were not created"
+                )
+    
+        except Exception as exc:
+    
             print(
                 "CREATE ASSIGNMENTS ERROR:",
                 repr(exc),
                 flush=True
             )
-        
+    
             # -------------------------------------------------
             # ROLLBACK TASK
             # -------------------------------------------------
-        
+    
             try:
-        
+    
                 (
                     supabase
                     .table("tasks")
@@ -1205,15 +1203,15 @@ def create_task():
                     )
                     .execute()
                 )
-        
+    
             except Exception as rollback_exc:
-        
+    
                 print(
                     "TASK ROLLBACK ERROR:",
                     repr(rollback_exc),
                     flush=True
                 )
-        
+    
             return jsonify({
                 "error":
                     "Task assignment database error",
