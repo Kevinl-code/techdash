@@ -1170,3 +1170,106 @@
         display: none; /* Hide badge on extremely tight screens to save space */
     }
 }
+/* =========================================================
+   LOGIN PAGE STYLES
+   ========================================================= */
+
+.login-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background-color: #0b0f17; /* Adjust to match your theme */
+}
+
+/* Container shell */
+.login-shell {
+    width: 100%;
+    max-width: 900px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    background: #161e2e;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+    overflow: hidden;
+}
+
+/* Brand side panel */
+.brand-panel {
+    padding: 2.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.8));
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Circular Logo Styling */
+.login-brand-logo {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    margin-bottom: 1.25rem;
+}
+
+.login-panel {
+    padding: 2.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* =========================================================
+   RESPONSIVE LOGIN BREAKPOINTS
+   ========================================================= */
+
+@media (max-width: 768px) {
+    .login-shell {
+        grid-template-columns: 1fr; /* Stack vertically on tablet/mobile */
+        max-width: 440px;
+    }
+
+    .brand-panel {
+        padding: 2rem 1.5rem 1.5rem;
+        text-align: center;
+        align-items: center;
+        border-right: none;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .login-brand-logo {
+        width: 52px;
+        height: 52px;
+        margin-bottom: 0.75rem;
+    }
+
+    .login-panel {
+        padding: 1.75rem 1.5rem;
+    }
+}
+
+@media (max-width: 420px) {
+    .login-page {
+        padding: 0.75rem;
+    }
+
+    .login-panel, 
+    .brand-panel {
+        padding: 1.25rem 1rem;
+    }
+
+    .tabs {
+        display: flex;
+        gap: 0.25rem;
+    }
+
+    .tab {
+        font-size: 0.8rem;
+        padding: 0.5rem;
+    }
+}
