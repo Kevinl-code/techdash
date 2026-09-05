@@ -7,16 +7,67 @@
     <title>Technical Team Dashboard</title>
 
     <link rel="stylesheet" href="/static/app.css">
+    <style>
+        /* Fix header visibility & layering */
+.topbar {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    background-color: #0f172a; /* adjust to match your theme background */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Ensure content doesn't get hidden behind fixed headers */
+main.dashboard {
+    padding-top: 1.5rem;
+}
+
+/* Brand area layout */
+.brand-area {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+}
+
+/* Custom Circular Team Logo */
+.brand-logo {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Ensure brand text is fully readable */
+.brand-text .eyebrow {
+    font-size: 0.7rem;
+    letter-spacing: 0.05em;
+    margin: 0;
+    color: #94a3b8;
+}
+
+.brand-text h2 {
+    font-size: 1.25rem;
+    margin: 0;
+    line-height: 1.1;
+    color: #ffffff;
+}
+    </style>
 </head>
 
 <body>
-
 <header class="topbar">
 
     <div class="brand-area">
-        <div class="brand-mark">T</div>
+        <!-- Circular Team Logo -->
+        <img src="/static/team-logo.png" alt="Team Logo" class="brand-logo">
 
-        <div>
+        <div class="brand-text">
             <p class="eyebrow">TECHNICAL TEAM</p>
             <h2>Command Center</h2>
         </div>
@@ -34,7 +85,6 @@
     </div>
 
 </header>
-
 
 <main class="dashboard">
 
