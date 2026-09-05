@@ -713,6 +713,296 @@ function setSelectedDate(date) {
     }
 }
 
+/* ==========================================
+   TASK MEMBER SELECTOR
+========================================== */
+
+let availableMembers = [];
+let assignmentMode = "members";
+
+
+async function loadTaskMembers() {
+
+    const list =
+        document.getElementById("memberCheckboxList");
+
+    if (!list) return;
+
+
+    try {
+
+        const response =
+            await fetch("/api/members");
+
+
+        if (!response.ok) {
+            throw new Error("Unable to load members");
+        }
+
+
+        const data =
+            await response.json();
+
+
+        availableMembers =
+            Array.isArray(data)
+                ? data
+                : data.members || [];
+
+
+        renderTaskMembers();
+
+
+    } catch (error) {
+
+        console.error(error);
+
+        list.innerHTML = `
+            <div class="member-loading">
+                Unable to load team members.
+            </div>
+        `;
+
+    }
+
+}
+
+
+function renderTaskMembers() {
+
+    const list =
+        document.getElementById("memberCheckboxList");
+
+    if (!list) return;
+
+
+    const activeMembers =
+        availableMembers.filter(
+            member => member.active !== false
+        );
+
+
+    if (!activeMembers.length) {
+
+        list.innerHTML = `
+            <div class="member-loading">
+                No active team members available.
+            </div>
+        `;
+
+        return;
+    }
+
+
+    list.innerHTML = "";
+
+
+    activeMembers.forEach(member => {
+
+        const wrapper =
+            document.createElement("label");
+
+        wrapper.className =
+            "member-checkbox";
+
+
+        wrapper.innerHTML = `
+
+            <input
+                type="checkbox"
+                class="member-select"
+                value="${escapeHtml(
+                    member.id
+                )}"
+                data-team-id="${escapeHtml(
+                    member.team_member_id
+                )}">
+
+            <div class="member-checkbox-info">
+
+                <span class="member-checkbox-name">
+                    ${escapeHtml(
+                        member.name
+                    )}
+                </span>
+
+                <span class="member-checkbox-id">
+                    ${escapeHtml(
+                        member.team_member_id
+                    )}
+                </span>
+
+            </div>
+
+            <span class="member-checkbox-email">
+                ${escapeHtml(
+                    member.email
+                )}
+            </span>
+
+        `;
+
+
+        list.appendChild(wrapper);
+
+    });
+
+
+    document
+        .querySelectorAll(".member-select")
+        .forEach(checkbox => {
+
+            checkbox.addEventListener(
+                "change",
+                updateSelectedMemberCount
+            );
+
+        });
+
+
+    updateSelectedMemberCount();
+
+}
+
+
+function getSelectedMemberIds() {
+
+    return Array.from(
+        document.querySelectorAll(
+            ".member-select:checked"
+        )
+    ).map(
+        checkbox => checkbox.value
+    );
+
+}
+
+
+function updateSelectedMemberCount() {
+
+    const count =
+        document.getElementById(
+            "selectedMemberCount"
+        );
+
+    if (!count) return;
+
+
+    if (assignmentMode === "all") {
+
+        const activeCount =
+            availableMembers.filter(
+                member => member.active !== false
+            ).length;
+
+        count.textContent =
+            `${activeCount} members`;
+
+        return;
+
+    }
+
+
+    const selected =
+        getSelectedMemberIds();
+
+
+    count.textContent =
+        `${selected.length} selected`;
+
+}
+
+
+/* ==========================================
+   ASSIGNMENT MODE
+========================================== */
+
+document
+    .getElementById("specificMembersBtn")
+    ?.addEventListener("click", function () {
+
+        assignmentMode = "members";
+
+        this.classList.add("active");
+
+        document
+            .getElementById("allMembersBtn")
+            ?.classList.remove("active");
+
+        document
+            .getElementById("memberSelector")
+            ?.classList.remove("hidden");
+
+        updateSelectedMemberCount();
+
+    });
+
+
+document
+    .getElementById("allMembersBtn")
+    ?.addEventListener("click", function () {
+
+        assignmentMode = "all";
+
+        this.classList.add("active");
+
+        document
+            .getElementById("specificMembersBtn")
+            ?.classList.remove("active");
+
+        document
+            .getElementById("memberSelector")
+            ?.classList.add("hidden");
+
+        updateSelectedMemberCount();
+
+    });
+
+
+/* ==========================================
+   SELECT ALL / CLEAR
+========================================== */
+
+document
+    .getElementById("selectAllMembers")
+    ?.addEventListener("click", function () {
+
+        document
+            .querySelectorAll(".member-select")
+            .forEach(checkbox => {
+
+                checkbox.checked = true;
+
+            });
+
+        updateSelectedMemberCount();
+
+    });
+
+
+document
+    .getElementById("clearAllMembers")
+    ?.addEventListener("click", function () {
+
+        document
+            .querySelectorAll(".member-select")
+            .forEach(checkbox => {
+
+                checkbox.checked = false;
+
+            });
+
+        updateSelectedMemberCount();
+
+    });
+
+
+/* ==========================================
+   INITIALIZE
+========================================== */
+
+loadTaskMembers();
+
 /* Initial render */
 renderDatePicker();
 
