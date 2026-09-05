@@ -1163,61 +1163,62 @@ def create_task():
             })
     
             try:
-    
-            assignment_insert = (
-                supabase
-                .table("task_assignments")
-                .insert(assignment_payload)
-                .execute()
-            )
-    
-            if len(
-                assignment_insert.data or []
-            ) != len(members):
-    
-                raise RuntimeError(
-                    "Assignment rows were not created"
-                )
-    
-        except Exception as exc:
-    
-            print(
-                "CREATE ASSIGNMENTS ERROR:",
-                repr(exc),
-                flush=True
-            )
-    
-            # -------------------------------------------------
-            # ROLLBACK TASK
-            # -------------------------------------------------
-    
-            try:
-    
-                (
+                assignment_insert = (
                     supabase
-                    .table("tasks")
-                    .delete()
-                    .eq(
-                        "id",
-                        task_id
+                    .table("task_assignments")
+                    .insert(
+                        assignment_payload
                     )
                     .execute()
                 )
-    
-            except Exception as rollback_exc:
-    
-                print(
-                    "TASK ROLLBACK ERROR:",
-                    repr(rollback_exc),
-                    flush=True
-                )
-    
-            return jsonify({
-                "error":
-                    "Task assignment database error",
-                "details":
-                    str(exc)
-            }), 500
+        
+                if len(
+                    assignment_insert.data or []
+                ) != len(members):
+        
+                    raise RuntimeError(
+                        "Assignment rows were not created"
+                    )
+        
+            except Exception as exc:
+        
+                    print(
+                        "CREATE ASSIGNMENTS ERROR:",
+                        repr(exc),
+                        flush=True
+                    )
+                
+                    # -------------------------------------------------
+                    # ROLLBACK TASK
+                    # -------------------------------------------------
+                
+                    try:
+                
+                        (
+                            supabase
+                            .table("tasks")
+                            .delete()
+                            .eq(
+                                "id",
+                                task_id
+                            )
+                            .execute()
+                        )
+                
+                    except Exception as rollback_exc:
+                
+                        print(
+                            "TASK ROLLBACK ERROR:",
+                            repr(rollback_exc),
+                            flush=True
+                        )
+                
+                    return jsonify({
+                        "error":
+                            "Task assignment database error",
+                        "details":
+                            str(exc)
+                    }), 500
     # -----------------------------------------------------
     # AUDIT
     # -----------------------------------------------------
