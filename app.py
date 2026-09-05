@@ -1205,19 +1205,15 @@ def create_task():
                 .execute()
             )
 
-        except Exception as rollback_exc:
-
-            print(
-                "TASK ROLLBACK ERROR:",
-                repr(rollback_exc)
-            )
-
-        return jsonify({
-            "error":
-                "Task could not be assigned "
-                "to the selected members"
-        }), 500
-
+        except Exception as e:
+               supabase.table("tasks").delete().eq("id", task["id"]).execute()
+    
+                print("TASK ASSIGNMENT ERROR:", repr(e))
+            
+                return jsonify({
+                    "error": "Task could not be assigned to the selected members",
+                    "details": str(e)
+                }), 500
     # -----------------------------------------------------
     # AUDIT
     # -----------------------------------------------------
