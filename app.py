@@ -279,6 +279,7 @@ def enrich_task(task, assignments):
             if assignment_list
             else None
         ),
+
         "assigned_name": (
             assignment_list[0]["member_name"]
             if assignment_list
@@ -364,7 +365,10 @@ def head_login():
             .table("users")
             .select("*")
             .eq("role", "head")
-            .or_(f"email.eq.{email},phone.eq.{phone}")
+            .or_(
+                f"email.eq.{email},"
+                f"phone.eq.{phone}"
+            )
             .limit(1)
             .execute()
         )
@@ -393,7 +397,9 @@ def head_login():
 
     if locked_until:
         try:
-            locked_dt = datetime.fromisoformat(locked_until.replace("Z", "+00:00"))
+            locked_dt = datetime.fromisoformat(
+                locked_until.replace("Z", "+00:00")
+            )
 
             if locked_dt > now():
                 return jsonify({
@@ -442,7 +448,9 @@ def head_login():
 
         if failures >= MAX_FAILURES:
             update["failed_attempts"] = 0
-            update["locked_until"] = (now() + timedelta(minutes=LOCK_MINUTES)).isoformat()
+            update["locked_until"] = (
+                now() + timedelta(minutes=LOCK_MINUTES)
+            ).isoformat()
 
         try:
             (
@@ -488,10 +496,7 @@ def head_login():
     session["user_id"] = user["id"]
     session["role"] = user["role"]
 
-    audit_log(
-        "HEAD_LOGIN_SUCCESS",
-        user["id"]
-    )
+    audit_log("HEAD_LOGIN_SUCCESS", user["id"])
 
     return jsonify({
         "ok": True,
@@ -545,10 +550,7 @@ def member_login():
     session["user_id"] = user["id"]
     session["role"] = user["role"]
 
-    audit_log(
-        "MEMBER_LOGIN_SUCCESS",
-        user["id"]
-    )
+    audit_log("MEMBER_LOGIN_SUCCESS", user["id"])
 
     return jsonify({
         "ok": True,
@@ -569,7 +571,9 @@ def logout():
 
     session.clear()
 
-    return jsonify({"ok": True})
+    return jsonify({
+        "ok": True
+    })
 
 
 # =========================================================
@@ -618,6 +622,7 @@ def list_tasks():
         # -------------------------------------------------
         # HEAD
         # -------------------------------------------------
+
         if user["role"] == "head":
             task_result = (
                 supabase
@@ -627,11 +632,13 @@ def list_tasks():
                 .limit(100)
                 .execute()
             )
+
             task_rows = task_result.data or []
 
         # -------------------------------------------------
         # MEMBER
         # -------------------------------------------------
+
         else:
             assignment_result = (
                 supabase
@@ -642,6 +649,7 @@ def list_tasks():
                 .limit(100)
                 .execute()
             )
+
             assignment_rows = assignment_result.data or []
 
             task_ids = [
@@ -661,11 +669,13 @@ def list_tasks():
                 .order("created_at", desc=True)
                 .execute()
             )
+
             task_rows = task_result.data or []
 
         # -------------------------------------------------
         # ATTACH ASSIGNMENTS
         # -------------------------------------------------
+
         if not task_rows:
             return jsonify([])
 
@@ -679,6 +689,7 @@ def list_tasks():
             .order("created_at")
             .execute()
         )
+
         assignments = assignment_result.data or []
 
         grouped = {}
@@ -691,13 +702,14 @@ def list_tasks():
 
         for task in task_rows:
             task_assignments = grouped.get(task["id"], [])
-            response.append(enrich_task(task, task_assignments))
+            response.append(
+                enrich_task(task, task_assignments)
+            )
 
         return jsonify(response)
 
     except Exception as exc:
         print("LIST TASKS ERROR:", repr(exc))
-
         return jsonify({
             "error": "Could not load tasks"
         }), 500
@@ -715,6 +727,7 @@ def create_task():
     title = (data.get("title") or "").strip()
     description = (data.get("description") or "").strip()
     due_date = (data.get("due_date") or "").strip() or None
+
     assigned_to = normalize_member_ids(data.get("assigned_to"))
 
     # -----------------------------------------------------
@@ -761,12 +774,16 @@ def create_task():
         member_result = (
             supabase
             .table("users")
-            .select("id,name,email,phone,team_member_id,active,role")
+            .select(
+                "id,name,email,phone,"
+                "team_member_id,active,role"
+            )
             .in_("id", assigned_to)
             .eq("role", "member")
             .eq("active", True)
             .execute()
         )
+
         members = member_result.data or []
 
     except Exception as exc:
@@ -780,11 +797,19 @@ def create_task():
     # -----------------------------------------------------
 
     found_ids = {member["id"] for member in members}
-    invalid_ids = [m_id for m_id in assigned_to if m_id not in found_ids]
+
+    invalid_ids = [
+        member_id
+        for member_id in assigned_to
+        if member_id not in found_ids
+    ]
 
     if invalid_ids:
         return jsonify({
-            "error": "One or more selected members are invalid or inactive"
+            "error": (
+                "One or more selected members "
+                "are invalid or inactive"
+            )
         }), 400
 
     # -----------------------------------------------------
@@ -804,6 +829,8 @@ def create_task():
         "status": "Assigned",
         "created_by": user["id"],
     }
+
+    saved_task = None
 
     try:
         inserted = (
@@ -861,6 +888,7 @@ def create_task():
         # -------------------------------------------------
         # ROLLBACK TASK
         # -------------------------------------------------
+
         try:
             (
                 supabase
@@ -888,7 +916,7 @@ def create_task():
             "task_id": task_id,
             "title": title,
             "member_count": len(members),
-            "member_ids": [m["id"] for m in members],
+            "member_ids": [member["id"] for member in members],
         }
     )
 
@@ -901,11 +929,13 @@ def create_task():
     for member in members:
         try:
             notification = send_task_notification(saved_task, member)
+
             notification = (
                 notification
                 if isinstance(notification, dict)
                 else {"success": bool(notification)}
             )
+
         except Exception as exc:
             print("NOTIFICATION ERROR:", repr(exc))
             notification = {
@@ -922,6 +952,7 @@ def create_task():
         # -------------------------------------------------
         # UPDATE ASSIGNMENT NOTIFICATION STATE
         # -------------------------------------------------
+
         if notification.get("success"):
             try:
                 (
@@ -943,7 +974,9 @@ def create_task():
     # -----------------------------------------------------
 
     successful_notifications = sum(
-        1 for n in notifications if n.get("success")
+        1
+        for notification in notifications
+        if notification.get("success")
     )
 
     return jsonify({
@@ -963,10 +996,13 @@ def create_task():
 @login_required
 def update_task(task_id):
     data = request.get_json(silent=True) or {}
+
     status = (data.get("status") or "").strip()
 
     if status not in VALID_TASK_STATUSES:
-        return jsonify({"error": "Invalid status"}), 400
+        return jsonify({
+            "error": "Invalid status"
+        }), 400
 
     user = current_user()
 
@@ -977,7 +1013,9 @@ def update_task(task_id):
     task = get_task_by_id(task_id)
 
     if not task:
-        return jsonify({"error": "Task not found"}), 404
+        return jsonify({
+            "error": "Task not found"
+        }), 404
 
     # -----------------------------------------------------
     # HEAD CAN UPDATE WHOLE TASK
@@ -1000,9 +1038,12 @@ def update_task(task_id):
                 .eq("task_id", task_id)
                 .execute()
             )
+
         except Exception as exc:
             print("HEAD TASK UPDATE ERROR:", repr(exc))
-            return jsonify({"error": "Could not update task"}), 500
+            return jsonify({
+                "error": "Could not update task"
+            }), 500
 
         audit_log(
             "TASK_STATUS_UPDATED",
@@ -1014,7 +1055,9 @@ def update_task(task_id):
             }
         )
 
-        return jsonify({"ok": True})
+        return jsonify({
+            "ok": True
+        })
 
     # -----------------------------------------------------
     # MEMBER CAN ONLY UPDATE THEIR ASSIGNMENT
@@ -1030,7 +1073,11 @@ def update_task(task_id):
         .execute()
     )
 
-    assignment = assignment_result.data[0] if assignment_result.data else None
+    assignment = (
+        assignment_result.data[0]
+        if assignment_result.data
+        else None
+    )
 
     if not assignment:
         return jsonify({
@@ -1099,7 +1146,10 @@ def get_members():
         result = (
             supabase
             .table("users")
-            .select("id,name,email,phone,team_member_id,active")
+            .select(
+                "id,name,email,phone,"
+                "team_member_id,active"
+            )
             .eq("role", "member")
             .order("team_member_id")
             .execute()
@@ -1182,7 +1232,10 @@ def create_member():
 
     if existing.data:
         return jsonify({
-            "error": "Email, mobile number, or TeamMemberId already exists"
+            "error": (
+                "Email, mobile number, or "
+                "TeamMemberId already exists"
+            )
         }), 409
 
     # -----------------------------------------------------
@@ -1239,6 +1292,7 @@ def create_member():
 @head_required
 def member_status(member_id):
     data = request.get_json(silent=True) or {}
+
     active = bool(data.get("active"))
 
     try:
@@ -1272,7 +1326,9 @@ def member_status(member_id):
         }
     )
 
-    return jsonify({"ok": True})
+    return jsonify({
+        "ok": True
+    })
 
 
 # =========================================================
