@@ -747,3 +747,273 @@
 .hidden {
     display: none !important;
 }
+/* ==========================================
+   TASK ASSIGNMENT
+========================================== */
+
+.task-assignment-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+
+.form-field label {
+    font-size: 12px;
+    font-weight: 650;
+    opacity: .75;
+}
+
+
+.field-label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+
+.selection-count {
+    font-size: 10px;
+    padding: 5px 9px;
+    border-radius: 20px;
+    background: rgba(255,255,255,.06);
+    opacity: .65;
+}
+
+
+/* Assignment mode */
+
+.assignment-mode {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px;
+}
+
+
+.assignment-mode-btn {
+    border: 1px solid rgba(255,255,255,.09);
+    background: rgba(255,255,255,.035);
+    color: inherit;
+
+    padding: 10px;
+
+    border-radius: 10px;
+
+    font-size: 11px;
+    font-weight: 650;
+
+    cursor: pointer;
+
+    transition: .2s ease;
+}
+
+
+.assignment-mode-btn:hover {
+    background: rgba(255,255,255,.07);
+}
+
+
+.assignment-mode-btn.active {
+    background: rgba(255,255,255,.12);
+    border-color: rgba(255,255,255,.25);
+}
+
+
+/* Member selector */
+
+.member-selector {
+    border: 1px solid rgba(255,255,255,.09);
+    border-radius: 14px;
+    overflow: hidden;
+    background: rgba(255,255,255,.025);
+}
+
+
+.member-selector-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 12px 14px;
+
+    border-bottom: 1px solid rgba(255,255,255,.07);
+
+    font-size: 11px;
+    font-weight: 650;
+}
+
+
+.member-selector-actions {
+    display: flex;
+    gap: 8px;
+}
+
+
+.member-selector-actions button {
+    border: 0;
+    background: transparent;
+    color: inherit;
+
+    font-size: 10px;
+    opacity: .55;
+
+    cursor: pointer;
+}
+
+
+.member-selector-actions button:hover {
+    opacity: 1;
+}
+
+
+/* Members */
+
+.member-checkbox-list {
+    max-height: 240px;
+    overflow-y: auto;
+}
+
+
+.member-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    padding: 12px 14px;
+
+    cursor: pointer;
+
+    border-bottom: 1px solid rgba(255,255,255,.045);
+
+    transition: .15s ease;
+}
+
+
+.member-checkbox:last-child {
+    border-bottom: 0;
+}
+
+
+.member-checkbox:hover {
+    background: rgba(255,255,255,.045);
+}
+
+
+.member-checkbox input {
+    width: 16px;
+    height: 16px;
+
+    accent-color: white;
+
+    cursor: pointer;
+}
+
+
+.member-checkbox-info {
+    flex: 1;
+}
+
+
+.member-checkbox-name {
+    display: block;
+
+    font-size: 12px;
+    font-weight: 650;
+}
+
+
+.member-checkbox-id {
+    display: block;
+
+    margin-top: 3px;
+
+    font-size: 10px;
+
+    opacity: .45;
+}
+
+
+.member-checkbox-email {
+    font-size: 10px;
+    opacity: .35;
+}
+
+
+.member-loading {
+    padding: 25px;
+    text-align: center;
+
+    font-size: 11px;
+
+    opacity: .45;
+}
+
+
+/* Notification */
+
+.notification-preview {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    padding: 13px;
+
+    border-radius: 12px;
+
+    background: rgba(255,255,255,.035);
+
+    border: 1px solid rgba(255,255,255,.07);
+}
+
+
+.notification-icon {
+    width: 34px;
+    height: 34px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 10px;
+
+    background: rgba(255,255,255,.07);
+}
+
+
+.notification-preview strong {
+    font-size: 11px;
+}
+
+
+.notification-preview p {
+    margin: 3px 0 0;
+
+    font-size: 10px;
+
+    line-height: 1.4;
+
+    opacity: .45;
+}
+
+
+.task-submit-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+
+@media (max-width: 600px) {
+
+    .assignment-mode {
+        grid-template-columns: 1fr;
+    }
+
+}
