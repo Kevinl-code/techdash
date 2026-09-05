@@ -1,6 +1,7 @@
 import os
 import smtplib
 from email.message import EmailMessage
+from datetime import datetime
 
 from dotenv import load_dotenv
 
@@ -9,7 +10,7 @@ load_dotenv()
 
 
 # =========================================================
-# CONFIG
+# SMTP CONFIG
 # =========================================================
 
 SMTP_HOST = os.getenv(
@@ -25,331 +26,370 @@ SMTP_PORT = int(
 )
 
 SMTP_USERNAME = os.getenv(
-    "SMTP_USERNAME",
-    ""
+    "SMTP_USERNAME"
 )
 
 SMTP_PASSWORD = os.getenv(
-    "SMTP_PASSWORD",
-    ""
+    "SMTP_PASSWORD"
 )
 
 SMTP_FROM = os.getenv(
     "SMTP_FROM",
-    SMTP_USERNAME
+    SMTP_USERNAME or ""
 )
 
-SMTP_TLS = os.getenv(
-    "SMTP_TLS",
-    "true"
-).lower() == "true"
+SMTP_TLS = (
+    os.getenv(
+        "SMTP_TLS",
+        "true"
+    ).lower()
+    in {"1", "true", "yes", "on"}
+)
 
 
 # =========================================================
-# HELPERS
+# SEND TASK EMAIL
 # =========================================================
 
-def smtp_configured():
+def send_task_notification(
+    task,
+    member
+):
+    """
+    Send one task-assignment email.
 
-    return all([
-        SMTP_HOST,
-        SMTP_PORT,
-        SMTP_USERNAME,
-        SMTP_PASSWORD,
-        SMTP_FROM,
-    ])
+    Returns:
+        {
+            "success": True,
+            "message": "...",
+        }
 
+    or:
 
-def build_task_email(task, member):
+        {
+            "success": False,
+            "error": "...",
+        }
+    """
+
+    recipient = (
+        member.get("email")
+        or ""
+    ).strip()
 
     member_name = (
         member.get("name")
         or "Team Member"
-    )
+    ).strip()
 
     title = (
         task.get("title")
-        or "New Team Task"
-    )
+        or "New Task"
+    ).strip()
 
     description = (
         task.get("description")
         or "No description provided."
-    )
+    ).strip()
 
     due_date = (
         task.get("due_date")
         or "No due date"
     )
 
+    task_id = (
+        task.get("id")
+        or ""
+    )
+
+    # -----------------------------------------------------
+    # VALIDATE SMTP
+    # -----------------------------------------------------
+
+    if not SMTP_USERNAME:
+
+        return {
+            "success": False,
+            "error":
+                "SMTP_USERNAME is not configured"
+        }
+
+    if not SMTP_PASSWORD:
+
+        return {
+            "success": False,
+            "error":
+                "SMTP_PASSWORD is not configured"
+        }
+
+    if not recipient:
+
+        return {
+            "success": False,
+            "error":
+                "Member email is missing"
+        }
+
+    # -----------------------------------------------------
+    # EMAIL SUBJECT
+    # -----------------------------------------------------
 
     subject = (
         f"New Task Assigned: {title}"
     )
 
+    # -----------------------------------------------------
+    # PLAIN TEXT
+    # -----------------------------------------------------
 
-    text = f"""
+    text_body = f"""
 Hello {member_name},
 
 A new task has been assigned to you by the Technical Team Head.
 
 TASK
+----
 {title}
 
 DESCRIPTION
+-----------
 {description}
 
 DUE DATE
+--------
 {due_date}
 
 STATUS
+------
 Assigned
 
-Please log in to the Technical Team Dashboard to view and update the task.
+Task ID:
+{task_id}
+
+Please log in to the Technical Team Dashboard to view and manage this task.
 
 Regards,
 Technical Team
-"""
+""".strip()
 
+    # -----------------------------------------------------
+    # HTML EMAIL
+    # -----------------------------------------------------
 
-    html = f"""
+    html_body = f"""
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-
-<style>
-
-body {{
-    margin: 0;
-    padding: 0;
-    background: #f4f5f7;
-    font-family: Arial, Helvetica, sans-serif;
-}}
-
-.wrapper {{
-    width: 100%;
-    padding: 32px 12px;
-}}
-
-.card {{
-    max-width: 600px;
-    margin: 0 auto;
-    background: #ffffff;
-    border-radius: 18px;
-    overflow: hidden;
-    border: 1px solid #e8e8e8;
-}}
-
-.header {{
-    padding: 28px 30px;
-    background: #111111;
-    color: white;
-}}
-
-.header h1 {{
-    margin: 0;
-    font-size: 22px;
-}}
-
-.header p {{
-    margin: 7px 0 0;
-    color: #bbbbbb;
-    font-size: 13px;
-}}
-
-.content {{
-    padding: 30px;
-}}
-
-.greeting {{
-    font-size: 16px;
-    color: #222222;
-}}
-
-.task-box {{
-    margin-top: 24px;
-    padding: 22px;
-    border-radius: 14px;
-    background: #f7f7f8;
-}}
-
-.task-title {{
-    margin: 0 0 12px;
-    font-size: 21px;
-    color: #111111;
-}}
-
-.description {{
-    color: #555555;
-    line-height: 1.6;
-    white-space: pre-wrap;
-}}
-
-.meta {{
-    margin-top: 20px;
-}}
-
-.meta-row {{
-    padding: 10px 0;
-    border-bottom: 1px solid #e5e5e5;
-}}
-
-.meta-label {{
-    display: inline-block;
-    width: 100px;
-    font-weight: bold;
-    color: #777777;
-}}
-
-.meta-value {{
-    color: #222222;
-}}
-
-.status {{
-    display: inline-block;
-    padding: 5px 10px;
-    border-radius: 20px;
-    background: #eeeeee;
-    font-size: 12px;
-    font-weight: bold;
-}}
-
-.footer {{
-    padding: 22px 30px;
-    background: #fafafa;
-    color: #777777;
-    font-size: 12px;
-    line-height: 1.5;
-}}
-
-</style>
+    <meta charset="UTF-8">
+    <title>New Task Assigned</title>
 </head>
 
-<body>
+<body style="
+    margin:0;
+    padding:0;
+    background:#f4f6f8;
+    font-family:Arial,Helvetica,sans-serif;
+">
 
-<div class="wrapper">
+<table width="100%" cellpadding="0" cellspacing="0"
+       style="background:#f4f6f8;padding:30px 15px;">
 
-<div class="card">
+    <tr>
+        <td align="center">
 
-    <div class="header">
-        <h1>Technical Team</h1>
-        <p>New task assignment</p>
-    </div>
+            <table width="600"
+                   cellpadding="0"
+                   cellspacing="0"
+                   style="
+                       max-width:600px;
+                       background:#ffffff;
+                       border-radius:14px;
+                       overflow:hidden;
+                       border:1px solid #e5e7eb;
+                   ">
 
-    <div class="content">
+                <!-- HEADER -->
 
-        <p class="greeting">
-            Hello {member_name},
-        </p>
+                <tr>
+                    <td style="
+                        padding:28px;
+                        background:#111827;
+                        color:#ffffff;
+                    ">
 
-        <p>
-            A new task has been assigned to you by the
-            Technical Team Head.
-        </p>
+                        <div style="
+                            font-size:12px;
+                            letter-spacing:1.5px;
+                            text-transform:uppercase;
+                            opacity:.75;
+                        ">
+                            Technical Team Dashboard
+                        </div>
 
-        <div class="task-box">
+                        <h1 style="
+                            margin:10px 0 0;
+                            font-size:25px;
+                            line-height:1.3;
+                        ">
+                            New Task Assigned
+                        </h1>
 
-            <h2 class="task-title">
-                {title}
-            </h2>
+                    </td>
+                </tr>
 
-            <div class="description">
-                {description}
-            </div>
+                <!-- CONTENT -->
 
-            <div class="meta">
+                <tr>
+                    <td style="padding:30px;">
 
-                <div class="meta-row">
-                    <span class="meta-label">
-                        Due date
-                    </span>
+                        <p style="
+                            margin:0 0 20px;
+                            font-size:16px;
+                            color:#111827;
+                        ">
+                            Hello
+                            <strong>
+                                {member_name}
+                            </strong>,
+                        </p>
 
-                    <span class="meta-value">
-                        {due_date}
-                    </span>
-                </div>
+                        <p style="
+                            margin:0 0 25px;
+                            color:#4b5563;
+                            line-height:1.6;
+                        ">
+                            A new task has been assigned
+                            to you by the Technical Team Head.
+                        </p>
 
-                <div class="meta-row">
-                    <span class="meta-label">
-                        Status
-                    </span>
+                        <!-- TASK TITLE -->
 
-                    <span class="status">
-                        Assigned
-                    </span>
-                </div>
+                        <div style="
+                            padding:20px;
+                            background:#f9fafb;
+                            border:1px solid #e5e7eb;
+                            border-radius:10px;
+                        ">
 
-            </div>
+                            <div style="
+                                font-size:12px;
+                                color:#6b7280;
+                                text-transform:uppercase;
+                                letter-spacing:1px;
+                                margin-bottom:7px;
+                            ">
+                                Task
+                            </div>
 
-        </div>
+                            <div style="
+                                font-size:20px;
+                                font-weight:700;
+                                color:#111827;
+                            ">
+                                {title}
+                            </div>
 
-        <p style="margin-top:24px;">
-            Please log in to the Technical Team Dashboard
-            to view and update your task.
-        </p>
+                        </div>
 
-    </div>
+                        <!-- DESCRIPTION -->
 
-    <div class="footer">
-        This is an automated task notification from
-        the Technical Team Dashboard.
-        <br>
-        Please do not reply directly to this email.
-    </div>
+                        <div style="
+                            margin-top:20px;
+                        ">
 
-</div>
+                            <div style="
+                                font-size:12px;
+                                color:#6b7280;
+                                text-transform:uppercase;
+                                letter-spacing:1px;
+                                margin-bottom:8px;
+                            ">
+                                Description
+                            </div>
 
-</div>
+                            <div style="
+                                color:#374151;
+                                line-height:1.7;
+                                white-space:pre-line;
+                            ">
+                                {description}
+                            </div>
+
+                        </div>
+
+                        <!-- DUE DATE -->
+
+                        <div style="
+                            margin-top:22px;
+                            padding:15px;
+                            border-left:4px solid #111827;
+                            background:#f9fafb;
+                        ">
+
+                            <strong>
+                                Due date:
+                            </strong>
+
+                            {due_date}
+
+                        </div>
+
+                        <!-- STATUS -->
+
+                        <div style="
+                            margin-top:18px;
+                            color:#374151;
+                        ">
+
+                            <strong>
+                                Status:
+                            </strong>
+
+                            Assigned
+
+                        </div>
+
+                    </td>
+                </tr>
+
+                <!-- FOOTER -->
+
+                <tr>
+                    <td style="
+                        padding:20px 30px;
+                        background:#f9fafb;
+                        border-top:1px solid #e5e7eb;
+                        color:#6b7280;
+                        font-size:12px;
+                        line-height:1.6;
+                    ">
+
+                        This is an automated notification
+                        from the Technical Team Dashboard.
+
+                    </td>
+                </tr>
+
+            </table>
+
+        </td>
+    </tr>
+
+</table>
 
 </body>
 </html>
-"""
+""".strip()
 
-
-    return subject, text, html
-
-
-# =========================================================
-# SEND TASK NOTIFICATION
-# =========================================================
-
-def send_task_notification(task, member):
-
-    recipient = (
-        member.get("email") or ""
-    ).strip()
-
-
-    if not recipient:
-
-        return {
-            "sent": False,
-            "error": "Member has no email address"
-        }
-
-
-    if not smtp_configured():
-
-        return {
-            "sent": False,
-            "error": "SMTP configuration is missing"
-        }
-
-
-    subject, text_body, html_body = (
-        build_task_email(
-            task,
-            member
-        )
-    )
-
+    # -----------------------------------------------------
+    # BUILD MESSAGE
+    # -----------------------------------------------------
 
     message = EmailMessage()
 
-    message["Subject"] = subject
     message["From"] = SMTP_FROM
     message["To"] = recipient
+    message["Subject"] = subject
 
     message.set_content(
         text_body
@@ -360,73 +400,91 @@ def send_task_notification(task, member):
         subtype="html"
     )
 
+    # -----------------------------------------------------
+    # SEND
+    # -----------------------------------------------------
 
     try:
 
-        with smtplib.SMTP(
-            SMTP_HOST,
-            SMTP_PORT,
-            timeout=30
-        ) as smtp:
+        if SMTP_TLS:
 
-            smtp.ehlo()
+            with smtplib.SMTP(
+                SMTP_HOST,
+                SMTP_PORT,
+                timeout=30
+            ) as server:
 
-            if SMTP_TLS:
+                server.ehlo()
 
-                smtp.starttls()
+                server.starttls()
 
-                smtp.ehlo()
+                server.ehlo()
 
-            smtp.login(
-                SMTP_USERNAME,
-                SMTP_PASSWORD
-            )
+                server.login(
+                    SMTP_USERNAME,
+                    SMTP_PASSWORD
+                )
 
-            smtp.send_message(
-                message
-            )
+                server.send_message(
+                    message
+                )
 
+        else:
+
+            with smtplib.SMTP(
+                SMTP_HOST,
+                SMTP_PORT,
+                timeout=30
+            ) as server:
+
+                server.ehlo()
+
+                server.login(
+                    SMTP_USERNAME,
+                    SMTP_PASSWORD
+                )
+
+                server.send_message(
+                    message
+                )
 
         print(
-            f"TASK EMAIL SENT: {recipient}"
+            f"TASK EMAIL SENT -> {recipient}"
         )
 
-
         return {
-            "sent": True,
-            "recipient": recipient,
-            "subject": subject,
+            "success": True,
+            "message":
+                "Notification email sent",
+            "recipient":
+                recipient,
         }
 
-
-    except smtplib.SMTPAuthenticationError:
+    except smtplib.SMTPAuthenticationError as exc:
 
         print(
-            "SMTP AUTHENTICATION FAILED"
+            "SMTP AUTHENTICATION ERROR:",
+            exc
         )
 
         return {
-            "sent": False,
-            "recipient": recipient,
-            "error": (
-                "SMTP authentication failed"
-            ),
+            "success": False,
+            "error":
+                "Email authentication failed"
         }
-
 
     except smtplib.SMTPException as exc:
 
         print(
             "SMTP ERROR:",
-            repr(exc)
+            exc
         )
 
         return {
-            "sent": False,
-            "recipient": recipient,
-            "error": str(exc),
+            "success": False,
+            "error":
+                "SMTP server rejected the email"
         }
-
 
     except Exception as exc:
 
@@ -436,7 +494,7 @@ def send_task_notification(task, member):
         )
 
         return {
-            "sent": False,
-            "recipient": recipient,
-            "error": str(exc),
+            "success": False,
+            "error":
+                "Could not send notification email"
         }
