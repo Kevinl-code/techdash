@@ -1329,3 +1329,145 @@
         border-color: rgba(96, 165, 250, 0.5);
     }
 }
+/* =========================================================
+   ANIMATIONS & GLOW EFFECTS
+   ========================================================= */
+
+/* Logo Pulse & Glow */
+.logo-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.login-brand-logo {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    animation: pulseGlow 3s infinite ease-in-out;
+}
+
+.login-brand-logo:hover {
+    transform: scale(1.08) rotate(2deg);
+    box-shadow: 0 0 25px rgba(59, 130, 246, 0.8);
+}
+
+@keyframes pulseGlow {
+    0%, 100% {
+        box-shadow: 0 0 12px rgba(59, 130, 246, 0.4), 0 0 20px rgba(147, 51, 234, 0.2);
+    }
+    50% {
+        box-shadow: 0 0 22px rgba(59, 130, 246, 0.8), 0 0 32px rgba(147, 51, 234, 0.5);
+    }
+}
+
+/* Falling Glitter Particle Background */
+.glitter-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 1;
+    overflow: hidden;
+}
+
+.glitter-particle {
+    position: absolute;
+    top: -10px;
+    width: 6px;
+    height: 6px;
+    background: radial-gradient(circle, #fff 0%, rgba(255,255,255,0) 70%);
+    border-radius: 50%;
+    opacity: 0.8;
+    animation: fallGlitter linear infinite;
+}
+
+@keyframes fallGlitter {
+    0% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(105vh) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+/* =========================================================
+   SUCCESS POPUP MODAL
+   ========================================================= */
+
+.success-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(11, 15, 23, 0.85);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.success-modal.hidden {
+    display: none;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.success-card {
+    background: #1e293b;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 16px;
+    padding: 2.5rem 2rem;
+    text-align: center;
+    max-width: 360px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    animation: popupPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.success-icon {
+    width: 56px;
+    height: 56px;
+    background: #10b981;
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    margin: 0 auto 1.25rem;
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
+}
+
+.success-card h2 {
+    margin: 0 0 0.5rem;
+    font-size: 1.5rem;
+    color: #ffffff;
+}
+
+.success-card p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #94a3b8;
+}
+
+@keyframes popupPop {
+    0% {
+        transform: scale(0.7);
+        opacity: 0;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
