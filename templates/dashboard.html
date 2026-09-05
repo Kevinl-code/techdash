@@ -231,113 +231,294 @@
 
     <!-- HEAD ONLY -->
 
-    <section id="headPanel" class="panel hidden">
+<section id="headPanel" class="panel hidden">
 
-        <div class="panel-head">
+    <div class="panel-head">
 
-            <div>
-                <p class="eyebrow">HEAD ONLY</p>
-                <h2>Assign Task</h2>
+        <div>
+            <p class="eyebrow">HEAD ONLY</p>
+            <h2>Assign Task</h2>
+
+            <p class="muted">
+                Create a task and notify one or more team members.
+            </p>
+        </div>
+
+    </div>
+
+
+    <form id="taskForm" class="task-assignment-form">
+
+
+        <!-- TASK TITLE -->
+
+        <div class="form-field">
+
+            <label>
+                Task title
+            </label>
+
+            <input
+                id="taskTitle"
+                type="text"
+                placeholder="Enter task title"
+                required>
+
+        </div>
+
+
+        <!-- DESCRIPTION -->
+
+        <div class="form-field">
+
+            <label>
+                Description
+            </label>
+
+            <textarea
+                id="taskDescription"
+                placeholder="Describe what needs to be completed..."
+                rows="4"></textarea>
+
+        </div>
+
+
+        <!-- MEMBER SELECTION -->
+
+        <div class="form-field">
+
+            <div class="field-label-row">
+
+                <label>
+                    Assign to
+                </label>
+
+                <span
+                    id="selectedMemberCount"
+                    class="selection-count">
+                    0 selected
+                </span>
+
+            </div>
+
+
+            <!-- ASSIGNMENT MODE -->
+
+            <div class="assignment-mode">
+
+                <button
+                    type="button"
+                    class="assignment-mode-btn active"
+                    data-mode="members"
+                    id="specificMembersBtn">
+
+                    Specific Members
+
+                </button>
+
+
+                <button
+                    type="button"
+                    class="assignment-mode-btn"
+                    data-mode="all"
+                    id="allMembersBtn">
+
+                    Whole Team
+
+                </button>
+
+            </div>
+
+
+            <!-- MEMBER SELECTOR -->
+
+            <div
+                id="memberSelector"
+                class="member-selector">
+
+                <div class="member-selector-header">
+
+                    <span>
+                        Select Team Members
+                    </span>
+
+                    <div class="member-selector-actions">
+
+                        <button
+                            type="button"
+                            id="selectAllMembers">
+                            Select all
+                        </button>
+
+                        <button
+                            type="button"
+                            id="clearAllMembers">
+                            Clear
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    id="memberCheckboxList"
+                    class="member-checkbox-list">
+
+                    <div class="member-loading">
+                        Loading team members...
+                    </div>
+
+                </div>
+
             </div>
 
         </div>
 
 
-        
-           <div class="date-picker-wrapper">
+        <!-- DUE DATE -->
 
-    <label class="field-label">
-        Due date
-    </label>
+        <div class="form-field">
 
-    <div class="date-input-box" id="datePickerButton">
+            <label>
+                Due date
+            </label>
 
-        <span class="calendar-icon">▣</span>
 
-        <span id="selectedDate">
-            Select due date
-        </span>
+            <div class="date-picker-wrapper">
 
-        <span class="date-arrow">⌄</span>
+                <div
+                    class="date-input-box"
+                    id="datePickerButton">
 
-    </div>
+                    <span class="calendar-icon">
+                        ▣
+                    </span>
 
-    <input
-        id="dueDate"
-        type="hidden">
+                    <span id="selectedDate">
+                        Select due date
+                    </span>
 
-    <div
-        id="datePicker"
-        class="custom-date-picker hidden">
+                    <span class="date-arrow">
+                        ⌄
+                    </span>
 
-        <div class="date-picker-header">
+                </div>
 
-            <button
-                type="button"
-                id="datePrev">
-                ‹
-            </button>
 
-            <strong id="dateMonth">
-                September 2026
-            </strong>
+                <input
+                    id="dueDate"
+                    type="hidden">
 
-            <button
-                type="button"
-                id="dateNext">
-                ›
-            </button>
+
+                <div
+                    id="datePicker"
+                    class="custom-date-picker hidden">
+
+
+                    <div class="date-picker-header">
+
+                        <button
+                            type="button"
+                            id="datePrev">
+                            ‹
+                        </button>
+
+                        <strong id="dateMonth">
+                            September 2026
+                        </strong>
+
+                        <button
+                            type="button"
+                            id="dateNext">
+                            ›
+                        </button>
+
+                    </div>
+
+
+                    <div class="date-weekdays">
+
+                        <span>Su</span>
+                        <span>Mo</span>
+                        <span>Tu</span>
+                        <span>We</span>
+                        <span>Th</span>
+                        <span>Fr</span>
+                        <span>Sa</span>
+
+                    </div>
+
+
+                    <div
+                        id="dateGrid"
+                        class="date-grid">
+                    </div>
+
+
+                    <div class="date-picker-footer">
+
+                        <button
+                            type="button"
+                            id="clearDate">
+                            Clear
+                        </button>
+
+                        <button
+                            type="button"
+                            id="selectToday">
+                            Today
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>
 
         </div>
 
-        <div class="date-weekdays">
 
-            <span>Su</span>
-            <span>Mo</span>
-            <span>Tu</span>
-            <span>We</span>
-            <span>Th</span>
-            <span>Fr</span>
-            <span>Sa</span>
+        <!-- NOTIFICATION PREVIEW -->
 
-        </div>
+        <div class="notification-preview">
 
-        <div
-            id="dateGrid"
-            class="date-grid">
-        </div>
+            <div class="notification-icon">
+                ✉
+            </div>
 
-        <div class="date-picker-footer">
+            <div>
 
-            <button
-                type="button"
-                id="clearDate">
-                Clear
-            </button>
+                <strong>
+                    Email notification
+                </strong>
 
-            <button
-                type="button"
-                id="selectToday">
-                Today
-            </button>
+                <p>
+                    Selected members will receive a task notification at
+                    their registered email address.
+                </p>
+
+            </div>
 
         </div>
 
-    </div>
 
-</div>
+        <!-- SUBMIT -->
 
-            <button
-                class="primary-btn"
-                type="submit">
+        <button
+            class="primary-btn task-submit-btn"
+            type="submit">
 
-                Assign task
+            <span>Assign Task</span>
 
-            </button>
+            <span>→</span>
 
-        </form>
+        </button>
 
-    </section>
+
+    </form>
+
+</section>
 
 
     <!-- TEAM MANAGEMENT -->
