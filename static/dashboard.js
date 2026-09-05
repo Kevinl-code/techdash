@@ -8,8 +8,8 @@ let currentCalendarDate = new Date();
 
 async function api(url, options = {}) {
     const r = await fetch(url, options);
-    const d = await r.json();
-    if (!r.ok) throw Error(d.error || "Request failed");
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || "Request failed");
     return d;
 }
 
@@ -29,7 +29,8 @@ function escapeHtml(value = "") {
 async function init() {
     try {
         me = await api("/api/me");
-    } catch {
+    } catch (err) {
+        console.error("Authentication check failed:", err);
         location.href = "/";
         return;
     }
@@ -40,13 +41,17 @@ async function init() {
     const canvaCard = document.getElementById("canvaCard");
     const folderCard = document.getElementById("folderCard");
 
-    if (userName) userName.textContent = me.name;
+    if (userName) userName.textContent = me.name || "";
     if (roleBadge) roleBadge.textContent = me.role === "head" ? "HEAD" : (me.team_member_id || "MEMBER");
 
-    const res = await api("/api/resources");
-    if (waCard) waCard.href = res.whatsapp || "#";
-    if (canvaCard) canvaCard.href = res.canva || "#";
-    if (folderCard) folderCard.href = res.folder || "#";
+    try {
+        const res = await api("/api/resources");
+        if (waCard) waCard.href = res.whatsapp || "#";
+        if (canvaCard) canvaCard.href = res.canva || "#";
+        if (folderCard) folderCard.href = res.folder || "#";
+    } catch (err) {
+        console.error("Failed to load resources:", err);
+    }
 
     if (me.role === "head") {
         document.getElementById("headPanel")?.classList.remove("hidden");
@@ -240,11 +245,17 @@ document.getElementById("todayBtn")?.addEventListener("click", () => {
 ========================================== */
 
 function openTaskModal(task) {
-    document.getElementById("modalTaskTitle").textContent = task.title || "Untitled task";
-    document.getElementById("modalTaskDescription").textContent = task.description || "No description available.";
-    document.getElementById("modalTaskStatus").textContent = task.status || "Assigned";
-    document.getElementById("modalTaskAssignee").textContent = task.assigned_name || "—";
-    document.getElementById("modalTaskDueDate").textContent = formatDateOnly(task.due_date);
+    const titleEl = document.getElementById("modalTaskTitle");
+    const descEl = document.getElementById("modalTaskDescription");
+    const statusEl = document.getElementById("modalTaskStatus");
+    const assigneeEl = document.getElementById("modalTaskAssignee");
+    const dueEl = document.getElementById("modalTaskDueDate");
+
+    if (titleEl) titleEl.textContent = task.title || "Untitled task";
+    if (descEl) descEl.textContent = task.description || "No description available.";
+    if (statusEl) statusEl.textContent = task.status || "Assigned";
+    if (assigneeEl) assigneeEl.textContent = task.assigned_name || "—";
+    if (dueEl) dueEl.textContent = formatDateOnly(task.due_date);
 
     document.getElementById("taskModal")?.classList.remove("hidden");
 }
@@ -324,6 +335,7 @@ function renderTasks() {
                 renderTasks();
             } catch (error) {
                 alert(error.message);
+                select.value = task.status; // Revert on error
             }
         });
 
@@ -343,38 +355,52 @@ function renderTasks() {
 ========================================== */
 
 async function loadMembers() {
-    const data = await api("/api/members");
-    const assignee = document.getElementById("assignee");
-    const memberList = document.getElementById("memberList");
+    try {
+        const data = await api("/api/members");
+        const assignee = document.getElementById("assignee");
+        const memberList = document.getElementById("memberList");
 
-    if (assignee) {
-        assignee.innerHTML = data
-            .filter(x => x.active)
-            .map(x => `<option value="${x.id}">${escapeHtml(x.team_member_id)} — ${escapeHtml(x.name)}</option>`)
-            .join("");
-    }
+        if (assignee) {
+            assignee.innerHTML = data
+                .filter(x => x.active)
+                .map(x => `<option value="${escapeHtml(x.id)}">${escapeHtml(x.team_member_id)} — ${escapeHtml(x.name)}</option>`)
+                .join("");
+        }
 
-    if (memberList) {
-        memberList.innerHTML = data
-            .map(x => `
-                <div class="member-row">
+        if (memberList) {
+            memberList.innerHTML = "";
+            data.forEach(x => {
+                const row = document.createElement("div");
+                row.className = "member-row";
+                row.innerHTML = `
                     <div>
                         <strong>${escapeHtml(x.name)}</strong>
                         <span>${escapeHtml(x.team_member_id)} · ${escapeHtml(x.email)} · ${escapeHtml(x.phone)}</span>
                     </div>
-                    <button class="ghost-btn" onclick="toggleMember('${x.id}', ${!x.active})">${x.active ? "Disable" : "Enable"}</button>
-                </div>
-            `).join("");
+                    <button class="ghost-btn">${x.active ? "Disable" : "Enable"}</button>
+                `;
+
+                const btn = row.querySelector("button");
+                btn.addEventListener("click", () => toggleMember(x.id, !x.active));
+                memberList.appendChild(row);
+            });
+        }
+    } catch (err) {
+        console.error("Failed to load members:", err);
     }
 }
 
 async function toggleMember(id, active) {
-    await api(`/api/members/${id}/status`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ active })
-    });
-    await loadMembers();
+    try {
+        await api(`/api/members/${id}/status`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ active })
+        });
+        await loadMembers();
+    } catch (err) {
+        alert(err.message);
+    }
 }
 
 /* ==========================================
@@ -382,8 +408,12 @@ async function toggleMember(id, active) {
 ========================================== */
 
 async function loadAudit() {
-    const data = await api("/api/audit");
-    renderAudit(data);
+    try {
+        const data = await api("/api/audit");
+        renderAudit(data);
+    } catch (err) {
+        console.error("Failed to load audit logs:", err);
+    }
 }
 
 function formatAuditAction(action) {
@@ -399,7 +429,7 @@ function formatAuditAction(action) {
     return actionMap[action] || action;
 }
 
-function renderAudit(logs) {
+function renderAudit(logs = []) {
     const container = document.getElementById("auditList");
     const count = document.getElementById("auditCount");
 
@@ -449,13 +479,20 @@ document.getElementById("taskForm")?.addEventListener("submit", async e => {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                title: document.getElementById("taskTitle").value,
-                description: document.getElementById("taskDescription").value,
-                assigned_to: document.getElementById("assignee").value,
-                due_date: document.getElementById("dueDate").value
+                title: document.getElementById("taskTitle")?.value || "",
+                description: document.getElementById("taskDescription")?.value || "",
+                assigned_to: document.getElementById("assignee")?.value || "",
+                due_date: document.getElementById("dueDate")?.value || ""
             })
         });
         e.target.reset();
+
+        /* Reset Custom Date Picker UI state */
+        selectedDateValue = null;
+        const selectedDateLabel = document.getElementById("selectedDate");
+        if (selectedDateLabel) selectedDateLabel.textContent = "Select due date";
+        renderDatePicker();
+
         await loadTasks();
         alert("Task assigned.");
     } catch (err) {
@@ -470,10 +507,10 @@ document.getElementById("memberFormAdmin")?.addEventListener("submit", async e =
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                name: document.getElementById("newName").value,
-                email: document.getElementById("newEmail").value,
-                phone: document.getElementById("newPhone").value,
-                team_member_id: document.getElementById("newMemberId").value
+                name: document.getElementById("newName")?.value || "",
+                email: document.getElementById("newEmail")?.value || "",
+                phone: document.getElementById("newPhone")?.value || "",
+                team_member_id: document.getElementById("newMemberId")?.value || ""
             })
         });
         e.target.reset();
@@ -484,9 +521,200 @@ document.getElementById("memberFormAdmin")?.addEventListener("submit", async e =
 });
 
 document.getElementById("logoutBtn")?.addEventListener("click", async () => {
-    await api("/api/logout", { method: "POST" });
-    location.href = "/";
+    try {
+        await api("/api/logout", { method: "POST" });
+    } catch (err) {
+        console.error("Logout request failed:", err);
+    } finally {
+        location.href = "/";
+    }
 });
+
+/* ==========================================
+   CUSTOM DATE PICKER
+========================================== */
+
+let pickerDate = new Date();
+let selectedDateValue = null;
+
+const datePickerButton = document.getElementById("datePickerButton");
+const datePicker = document.getElementById("datePicker");
+const dateGrid = document.getElementById("dateGrid");
+const dateMonth = document.getElementById("dateMonth");
+const selectedDate = document.getElementById("selectedDate");
+const dueDateInput = document.getElementById("dueDate");
+
+/* OPEN / CLOSE */
+if (datePickerButton) {
+    datePickerButton.addEventListener("click", function (event) {
+        event.stopPropagation();
+        if (datePicker) {
+            datePicker.classList.toggle("hidden");
+            datePickerButton.classList.toggle(
+                "active",
+                !datePicker.classList.contains("hidden")
+            );
+            renderDatePicker();
+        }
+    });
+}
+
+/* PREVIOUS MONTH */
+document.getElementById("datePrev")?.addEventListener("click", function (event) {
+    event.stopPropagation();
+    pickerDate.setMonth(pickerDate.getMonth() - 1);
+    renderDatePicker();
+});
+
+/* NEXT MONTH */
+document.getElementById("dateNext")?.addEventListener("click", function (event) {
+    event.stopPropagation();
+    pickerDate.setMonth(pickerDate.getMonth() + 1);
+    renderDatePicker();
+});
+
+/* TODAY */
+document.getElementById("selectToday")?.addEventListener("click", function (event) {
+    event.stopPropagation();
+    const today = new Date();
+    pickerDate = new Date(today);
+    setSelectedDate(today);
+    renderDatePicker();
+});
+
+/* CLEAR */
+document.getElementById("clearDate")?.addEventListener("click", function (event) {
+    event.stopPropagation();
+    selectedDateValue = null;
+    if (dueDateInput) dueDateInput.value = "";
+    if (selectedDate) selectedDate.textContent = "Select due date";
+    renderDatePicker();
+});
+
+/* CLOSE WHEN CLICKING OUTSIDE */
+document.addEventListener("click", function (event) {
+    if (
+        datePicker &&
+        datePickerButton &&
+        !datePicker.contains(event.target) &&
+        !datePickerButton.contains(event.target)
+    ) {
+        datePicker.classList.add("hidden");
+        datePickerButton.classList.remove("active");
+    }
+});
+
+/* ==========================================
+   RENDER DATE PICKER
+========================================== */
+
+function renderDatePicker() {
+    if (!dateGrid || !dateMonth) return;
+
+    const year = pickerDate.getFullYear();
+    const month = pickerDate.getMonth();
+
+    dateMonth.textContent = new Intl.DateTimeFormat("en-IN", {
+        month: "long",
+        year: "numeric"
+    }).format(pickerDate);
+
+    dateGrid.innerHTML = "";
+
+    /* First day of month */
+    const firstDay = new Date(year, month, 1).getDay();
+
+    /* Number of days */
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    /* Previous month */
+    const previousMonthDays = new Date(year, month, 0).getDate();
+
+    for (let i = firstDay - 1; i >= 0; i--) {
+        const day = document.createElement("div");
+        day.className = "date-day other-month";
+        day.textContent = previousMonthDays - i;
+        dateGrid.appendChild(day);
+    }
+
+    /* Current month */
+    const today = new Date();
+    for (let dayNumber = 1; dayNumber <= daysInMonth; dayNumber++) {
+        const day = document.createElement("div");
+        day.className = "date-day";
+        day.textContent = dayNumber;
+
+        const currentDay = new Date(year, month, dayNumber);
+
+        /* Today */
+        if (
+            currentDay.getDate() === today.getDate() &&
+            currentDay.getMonth() === today.getMonth() &&
+            currentDay.getFullYear() === today.getFullYear()
+        ) {
+            day.classList.add("today");
+        }
+
+        /* Selected date */
+        if (
+            selectedDateValue &&
+            currentDay.getFullYear() === selectedDateValue.getFullYear() &&
+            currentDay.getMonth() === selectedDateValue.getMonth() &&
+            currentDay.getDate() === selectedDateValue.getDate()
+        ) {
+            day.classList.add("selected");
+        }
+
+        /* Click */
+        day.addEventListener("click", function (event) {
+            event.stopPropagation();
+            setSelectedDate(currentDay);
+            if (datePicker) datePicker.classList.add("hidden");
+            if (datePickerButton) datePickerButton.classList.remove("active");
+        });
+
+        dateGrid.appendChild(day);
+    }
+
+    /* Fill remaining cells */
+    const totalCells = firstDay + daysInMonth;
+    const remaining = (7 - (totalCells % 7)) % 7;
+
+    for (let i = 1; i <= remaining; i++) {
+        const day = document.createElement("div");
+        day.className = "date-day other-month";
+        day.textContent = i;
+        dateGrid.appendChild(day);
+    }
+}
+
+/* ==========================================
+   SELECT DATE
+========================================== */
+
+function setSelectedDate(date) {
+    selectedDateValue = new Date(date);
+
+    /* Display */
+    if (selectedDate) {
+        selectedDate.textContent = new Intl.DateTimeFormat("en-IN", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric"
+        }).format(date);
+    }
+
+    /* Backend value */
+    if (dueDateInput) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        dueDateInput.value = `${year}-${month}-${day}`;
+    }
+}
+
+/* Initial render */
+renderDatePicker();
 
 /* Kick off application */
 init();
