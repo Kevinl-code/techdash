@@ -19,7 +19,7 @@ app.secret_key = os.getenv("FLASK_SECRET_KEY", secrets.token_hex(32))
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
-    SESSION_COOKIE_SECURE=True,
+    SESSION_COOKIE_SECURE = os.getenv("APP_ENV") == "production"
     PERMANENT_SESSION_LIFETIME=timedelta(hours=8),
 )
 
@@ -165,6 +165,8 @@ def head_login():
     session.clear()
     session.permanent = True
     session["user_id"] = user["id"]
+    session["role"] = user["role"]
+    
     audit_log("HEAD_LOGIN_SUCCESS", user["id"])
     return jsonify({"ok": True, "role": "head"})
 
@@ -196,6 +198,7 @@ def member_login():
     session.clear()
     session.permanent = True
     session["user_id"] = user["id"]
+    session["role"] = user["role"]
     audit_log("MEMBER_LOGIN_SUCCESS", user["id"])
     return jsonify({"ok": True, "role": "member"})
 
@@ -311,91 +314,153 @@ def update_task(task_id):
 
 
 @app.get("/api/members")
+@head_required
 def get_members():
-
-    if session.get("role") != "head":
-        return jsonify({"error": "Forbidden"}), 403
-
     result = (
         supabase
         .table("users")
-        .select(
-            "id,name,email,phone,team_member_id,active"
-        )
+        .select("id,name,email,phone,team_member_id,active")
         .eq("role", "member")
         .order("team_member_id")
         .execute()
     )
 
-    return jsonify(result.data)
-    
+    return jsonify(result.data or [])
+
+
 @app.post("/api/members")
 @head_required
 def create_member():
     data = request.get_json(silent=True) or {}
+
     name = (data.get("name") or "").strip()
     email = clean_email(data.get("email"))
     phone = clean_phone(data.get("phone"))
     member_id = (data.get("team_member_id") or "").strip().upper()
 
     if not all([name, email, phone, member_id]):
-        return jsonify({"error": "All member fields are required"}), 400
+        return jsonify({
+            "error": "All member fields are required"
+        }), 400
 
     email = valid_email(email)
-    if not email or not re.fullmatch(r"TM(00[1-9]|01[0-9]|020)", member_id):
-        return jsonify({"error": "Invalid member data"}), 400
+
+    if not email:
+        return jsonify({
+            "error": "Invalid email address"
+        }), 400
+
+    if not re.fullmatch(r"TM(00[1-9]|01[0-9]|020)", member_id):
+        return jsonify({
+            "error": "TeamMemberId must be TM001 to TM020"
+        }), 400
 
     try:
         number = int(member_id[2:])
     except ValueError:
-        return jsonify({"error": "Invalid TeamMemberId"}), 400
+        return jsonify({
+            "error": "Invalid TeamMemberId"
+        }), 400
 
     if not 1 <= number <= 20:
-        return jsonify({"error": "Invalid TeamMemberId"}), 400
+        return jsonify({
+            "error": "Invalid TeamMemberId"
+        }), 400
 
     existing = (
-        supabase.table("users")
+        supabase
+        .table("users")
         .select("id")
-        .or_(f"email.eq.{email},phone.eq.{phone},team_member_id.eq.{member_id}")
+        .or_(
+            f"email.eq.{email},"
+            f"phone.eq.{phone},"
+            f"team_member_id.eq.{member_id}"
+        )
         .limit(1)
         .execute()
     )
+
     if existing.data:
-        return jsonify({"error": "Email, mobile number, or TeamMemberId already exists"}), 409
+        return jsonify({
+            "error": "Email, mobile number, or TeamMemberId already exists"
+        }), 409
 
     try:
-        supabase.table("users").insert({
-            "role": "member",
-            "name": name,
-            "email": email,
-            "phone": phone,
-            "team_member_id": member_id,
-            "active": True,
-        }).execute()
-    except Exception:
-        return jsonify({"error": "Could not create member"}), 409
+        result = (
+            supabase
+            .table("users")
+            .insert({
+                "role": "member",
+                "name": name,
+                "email": email,
+                "phone": phone,
+                "team_member_id": member_id,
+                "active": True
+            })
+            .execute()
+        )
 
-    audit_log("MEMBER_CREATED", current_user()["id"], {"team_member_id": member_id})
-    return jsonify({"ok": True})
+        if not result.data:
+            return jsonify({
+                "error": "Member was not created"
+            }), 500
+
+    except Exception as e:
+        print("CREATE MEMBER ERROR:", e)
+
+        return jsonify({
+            "error": "Could not create member"
+        }), 409
+
+    audit_log(
+        "MEMBER_CREATED",
+        current_user()["id"],
+        {
+            "team_member_id": member_id,
+            "email": email
+        }
+    )
+
+    return jsonify({
+        "ok": True,
+        "member": result.data[0]
+    })
 
 
 @app.patch("/api/members/<member_id>/status")
 @head_required
 def member_status(member_id):
-    active = bool((request.get_json(silent=True) or {}).get("active"))
+    data = request.get_json(silent=True) or {}
+    active = bool(data.get("active"))
+
     result = (
-        supabase.table("users")
-        .update({"active": active})
+        supabase
+        .table("users")
+        .update({
+            "active": active
+        })
         .eq("id", member_id)
         .eq("role", "member")
         .execute()
     )
-    if not result.data:
-        return jsonify({"error": "Member not found"}), 404
-    audit_log("MEMBER_STATUS_UPDATED", current_user()["id"],
-              {"member_id": member_id, "active": active})
-    return jsonify({"ok": True})
 
+    if not result.data:
+        return jsonify({
+            "error": "Member not found"
+        }), 404
+
+    audit_log(
+        "MEMBER_STATUS_UPDATED",
+        current_user()["id"],
+        {
+            "member_id": member_id,
+            "active": active
+        }
+    )
+
+    return jsonify({
+        "ok": True
+    })
 
 @app.get("/api/audit")
 @head_required
