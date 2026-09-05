@@ -5,14 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Technical Team | Secure Access</title>
     <link rel="stylesheet" href="/static/app.css">
+    <!-- Canvas Confetti Library for dynamic popper bursts -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 </head>
 <body class="login-page">
+
+    <!-- Ambient falling glitters background container -->
+    <div id="glitterContainer" class="glitter-container"></div>
 
     <main class="login-shell">
 
         <!-- BRAND PANEL -->
         <section class="brand-panel">
-            <img src="/static/team-logo.png" alt="Team Logo" class="login-brand-logo">
+            <div class="logo-wrapper">
+                <img src="/static/team-logo.png" alt="Team Logo" class="login-brand-logo">
+            </div>
             
             <p class="eyebrow">TECHNICAL TEAM</p>
             <h1>Command Center</h1>
@@ -77,6 +84,57 @@
 
     </main>
 
+    <!-- SUCCESS CELEBRATION POPUP -->
+    <div id="successModal" class="success-modal hidden">
+        <div class="success-card">
+            <div class="success-icon">✓</div>
+            <h2>Welcome Back!</h2>
+            <p>Authentication successful. Redirecting to Command Center...</p>
+        </div>
+    </div>
+
     <script src="/static/login.js"></script>
+    <script>
+        // Opening Celebration Burst & Falling Glitters
+        window.addEventListener('DOMContentLoaded', () => {
+            // 1. Initial Confetti Burst
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 80,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
+            }
+
+            // 2. Dynamic Falling Glitters Generator
+            const glitterContainer = document.getElementById('glitterContainer');
+            for (let i = 0; i < 25; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'glitter-particle';
+                particle.style.left = `${Math.random() * 100}%`;
+                particle.style.animationDuration = `${3 + Math.random() * 4}s`;
+                particle.style.animationDelay = `${Math.random() * 2}s`;
+                glitterContainer.appendChild(particle);
+            }
+        });
+
+        // Trigger Success Popup (Call this function inside login.js on successful login)
+        function triggerSuccessPopup(redirectUrl = '/dashboard') {
+            const modal = document.getElementById('successModal');
+            modal.classList.remove('hidden');
+
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 120,
+                    spread: 100,
+                    origin: { y: 0.5 }
+                });
+            }
+
+            setTimeout(() => {
+                window.location.href = redirectUrl;
+            }, 1800);
+        }
+    </script>
 </body>
 </html>
