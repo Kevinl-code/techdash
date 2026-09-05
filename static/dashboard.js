@@ -2,29 +2,28 @@ let me = null;
 let tasks = [];
 let availableMembers = [];
 
-let assignmentMode = "members";
-
 let currentCalendarDate = new Date();
+
+let assignmentMode = "members";
 
 let pickerDate = new Date();
 let selectedDateValue = null;
 
 
-/* =========================================================
-   API
-========================================================= */
+// =========================================================
+// API
+// =========================================================
 
 async function api(url, options = {}) {
 
-    const response = await fetch(
-        url,
-        options
-    );
+    const response = await fetch(url, {
+        credentials: "same-origin",
+        ...options
+    });
 
     const data = await response
         .json()
         .catch(() => ({}));
-
 
     if (!response.ok) {
 
@@ -34,14 +33,13 @@ async function api(url, options = {}) {
         );
     }
 
-
     return data;
 }
 
 
-/* =========================================================
-   HTML ESCAPE
-========================================================= */
+// =========================================================
+// HTML ESCAPE
+// =========================================================
 
 function escapeHtml(value = "") {
 
@@ -54,9 +52,9 @@ function escapeHtml(value = "") {
 }
 
 
-/* =========================================================
-   DATE HELPERS
-========================================================= */
+// =========================================================
+// DATE HELPERS
+// =========================================================
 
 function formatDateTime(value) {
 
@@ -69,7 +67,6 @@ function formatDateTime(value) {
     if (Number.isNaN(date.getTime())) {
         return "—";
     }
-
 
     return new Intl.DateTimeFormat(
         "en-IN",
@@ -91,13 +88,43 @@ function formatDateOnly(value) {
         return "No due date";
     }
 
+    /*
+     * For YYYY-MM-DD, avoid timezone
+     * shifting by parsing manually.
+     */
+
+    if (
+        typeof value === "string" &&
+        /^\d{4}-\d{2}-\d{2}$/.test(value)
+    ) {
+
+        const [
+            year,
+            month,
+            day
+        ] = value.split("-").map(Number);
+
+        const date = new Date(
+            year,
+            month - 1,
+            day
+        );
+
+        return new Intl.DateTimeFormat(
+            "en-IN",
+            {
+                day: "2-digit",
+                month: "short",
+                year: "numeric"
+            }
+        ).format(date);
+    }
 
     const date = new Date(value);
 
     if (Number.isNaN(date.getTime())) {
         return "No due date";
     }
-
 
     return new Intl.DateTimeFormat(
         "en-IN",
@@ -116,13 +143,11 @@ function relativeTime(value) {
         return "";
     }
 
-
     const date = new Date(value);
 
     if (Number.isNaN(date.getTime())) {
         return "";
     }
-
 
     const diff =
         Date.now() -
@@ -139,7 +164,6 @@ function relativeTime(value) {
 
     const days =
         Math.floor(hours / 24);
-
 
     if (seconds < 30) {
         return "Just now";
@@ -161,167 +185,13 @@ function relativeTime(value) {
         return `${days}d ago`;
     }
 
-
     return formatDateTime(value);
 }
 
 
-/* =========================================================
-   INITIALIZATION
-========================================================= */
-
-async function init() {
-
-    try {
-
-        me = await api(
-            "/api/me"
-        );
-
-    } catch (error) {
-
-        console.error(
-            "Authentication failed:",
-            error
-        );
-
-        location.href = "/";
-
-        return;
-    }
-
-
-    /* -----------------------------------------------------
-       USER
-    ----------------------------------------------------- */
-
-    const userName =
-        document.getElementById(
-            "userName"
-        );
-
-    const roleBadge =
-        document.getElementById(
-            "roleBadge"
-        );
-
-
-    if (userName) {
-        userName.textContent =
-            me.name || "";
-    }
-
-
-    if (roleBadge) {
-
-        roleBadge.textContent =
-            me.role === "head"
-                ? "HEAD"
-                : (
-                    me.team_member_id ||
-                    "MEMBER"
-                );
-    }
-
-
-    /* -----------------------------------------------------
-       RESOURCES
-    ----------------------------------------------------- */
-
-    try {
-
-        const resources =
-            await api(
-                "/api/resources"
-            );
-
-
-        const waCard =
-            document.getElementById(
-                "waCard"
-            );
-
-        const canvaCard =
-            document.getElementById(
-                "canvaCard"
-            );
-
-        const folderCard =
-            document.getElementById(
-                "folderCard"
-            );
-
-
-        if (waCard) {
-            waCard.href =
-                resources.whatsapp || "#";
-        }
-
-        if (canvaCard) {
-            canvaCard.href =
-                resources.canva || "#";
-        }
-
-        if (folderCard) {
-            folderCard.href =
-                resources.folder || "#";
-        }
-
-
-    } catch (error) {
-
-        console.error(
-            "Resource loading failed:",
-            error
-        );
-    }
-
-
-    /* -----------------------------------------------------
-       HEAD ONLY
-    ----------------------------------------------------- */
-
-    if (me.role === "head") {
-
-        document
-            .getElementById("headPanel")
-            ?.classList.remove("hidden");
-
-        document
-            .getElementById("headManagement")
-            ?.classList.remove("hidden");
-
-        document
-            .getElementById("auditPanel")
-            ?.classList.remove("hidden");
-
-
-        await loadMembers();
-
-        await loadTaskMembers();
-
-        await loadAudit();
-    }
-
-
-    /* -----------------------------------------------------
-       TASKS
-    ----------------------------------------------------- */
-
-    await loadTasks();
-
-
-    /* -----------------------------------------------------
-       DATE PICKER
-    ----------------------------------------------------- */
-
-    renderDatePicker();
-}
-
-
-/* =========================================================
-   STATUS
-========================================================= */
+// =========================================================
+// STATUS
+// =========================================================
 
 function getStatusClass(status) {
 
@@ -342,9 +212,144 @@ function getStatusClass(status) {
 }
 
 
-/* =========================================================
-   CALENDAR
-========================================================= */
+// =========================================================
+// INITIALIZATION
+// =========================================================
+
+async function init() {
+
+    try {
+
+        me = await api("/api/me");
+
+    } catch (error) {
+
+        console.error(
+            "Authentication check failed:",
+            error
+        );
+
+        location.href = "/";
+
+        return;
+    }
+
+    const userName =
+        document.getElementById(
+            "userName"
+        );
+
+    const roleBadge =
+        document.getElementById(
+            "roleBadge"
+        );
+
+    if (userName) {
+        userName.textContent =
+            me.name || "";
+    }
+
+    if (roleBadge) {
+
+        roleBadge.textContent =
+            me.role === "head"
+                ? "HEAD"
+                : (
+                    me.team_member_id
+                    || "MEMBER"
+                );
+    }
+
+
+    // =====================================================
+    // RESOURCES
+    // =====================================================
+
+    try {
+
+        const resources =
+            await api(
+                "/api/resources"
+            );
+
+        const waCard =
+            document.getElementById(
+                "waCard"
+            );
+
+        const canvaCard =
+            document.getElementById(
+                "canvaCard"
+            );
+
+        const folderCard =
+            document.getElementById(
+                "folderCard"
+            );
+
+        if (waCard) {
+            waCard.href =
+                resources.whatsapp || "#";
+        }
+
+        if (canvaCard) {
+            canvaCard.href =
+                resources.canva || "#";
+        }
+
+        if (folderCard) {
+            folderCard.href =
+                resources.folder || "#";
+        }
+
+    } catch (error) {
+
+        console.error(
+            "Failed to load resources:",
+            error
+        );
+    }
+
+
+    // =====================================================
+    // HEAD ONLY
+    // =====================================================
+
+    if (me.role === "head") {
+
+        document
+            .getElementById("headPanel")
+            ?.classList.remove("hidden");
+
+        document
+            .getElementById("headManagement")
+            ?.classList.remove("hidden");
+
+        document
+            .getElementById("auditPanel")
+            ?.classList.remove("hidden");
+
+        await loadMembers();
+
+        await loadTaskMembers();
+
+        await loadAudit();
+    }
+
+
+    // =====================================================
+    // TASKS
+    // =====================================================
+
+    await loadTasks();
+
+    renderDatePicker();
+}
+
+
+// =========================================================
+// CALENDAR
+// =========================================================
 
 function renderCalendar() {
 
@@ -358,18 +363,15 @@ function renderCalendar() {
             "calendarMonth"
         );
 
-
     if (!grid || !monthLabel) {
         return;
     }
-
 
     const year =
         currentCalendarDate.getFullYear();
 
     const month =
         currentCalendarDate.getMonth();
-
 
     monthLabel.textContent =
         new Intl.DateTimeFormat(
@@ -382,9 +384,7 @@ function renderCalendar() {
             currentCalendarDate
         );
 
-
     grid.innerHTML = "";
-
 
     const firstDay =
         new Date(
@@ -393,14 +393,12 @@ function renderCalendar() {
             1
         ).getDay();
 
-
     const daysInMonth =
         new Date(
             year,
             month + 1,
             0
         ).getDate();
-
 
     const previousMonthDays =
         new Date(
@@ -410,9 +408,9 @@ function renderCalendar() {
         ).getDate();
 
 
-    /* -----------------------------------------------------
-       PREVIOUS MONTH
-    ----------------------------------------------------- */
+    // -----------------------------------------------------
+    // PREVIOUS MONTH
+    // -----------------------------------------------------
 
     for (
         let i = firstDay;
@@ -420,30 +418,29 @@ function renderCalendar() {
         i--
     ) {
 
-        const cell =
+        const day =
             document.createElement(
                 "div"
             );
 
-        cell.className =
+        day.className =
             "calendar-day other-month";
 
-        cell.innerHTML = `
+        day.innerHTML = `
             <span class="day-number">
                 ${previousMonthDays - i + 1}
             </span>
         `;
 
-        grid.appendChild(cell);
+        grid.appendChild(day);
     }
 
 
-    /* -----------------------------------------------------
-       CURRENT MONTH
-    ----------------------------------------------------- */
+    // -----------------------------------------------------
+    // CURRENT MONTH
+    // -----------------------------------------------------
 
     const today = new Date();
-
 
     for (
         let dayNumber = 1;
@@ -459,7 +456,6 @@ function renderCalendar() {
         cell.className =
             "calendar-day";
 
-
         const cellDate =
             new Date(
                 year,
@@ -471,10 +467,8 @@ function renderCalendar() {
         if (
             cellDate.getDate() ===
                 today.getDate() &&
-
             cellDate.getMonth() ===
                 today.getMonth() &&
-
             cellDate.getFullYear() ===
                 today.getFullYear()
         ) {
@@ -492,6 +486,10 @@ function renderCalendar() {
         `;
 
 
+        // -------------------------------------------------
+        // TASKS ON DATE
+        // -------------------------------------------------
+
         const dayTasks =
             tasks.filter(task => {
 
@@ -499,22 +497,41 @@ function renderCalendar() {
                     return false;
                 }
 
+                let due;
 
-                const due =
-                    new Date(
+                if (
+                    typeof task.due_date ===
+                        "string" &&
+                    /^\d{4}-\d{2}-\d{2}$/
+                        .test(task.due_date)
+                ) {
+
+                    const [
+                        y,
+                        m,
+                        d
+                    ] =
                         task.due_date
+                            .split("-")
+                            .map(Number);
+
+                    due = new Date(
+                        y,
+                        m - 1,
+                        d
                     );
 
+                } else {
+
+                    due = new Date(
+                        task.due_date
+                    );
+                }
 
                 return (
-                    due.getFullYear() ===
-                        year &&
-
-                    due.getMonth() ===
-                        month &&
-
-                    due.getDate() ===
-                        dayNumber
+                    due.getFullYear() === year &&
+                    due.getMonth() === month &&
+                    due.getDate() === dayNumber
                 );
             });
 
@@ -531,20 +548,18 @@ function renderCalendar() {
                         "span"
                     );
 
-
                 taskElement.className =
-                    `calendar-task ${getStatusClass(
-                        task.status
-                    )}`;
-
+                    `calendar-task ${
+                        getStatusClass(
+                            task.status
+                        )
+                    }`;
 
                 taskElement.textContent =
                     task.title;
 
-
                 taskElement.title =
                     `${task.title} — ${task.status}`;
-
 
                 taskElement.addEventListener(
                     "click",
@@ -555,7 +570,6 @@ function renderCalendar() {
                         openTaskModal(task);
                     }
                 );
-
 
                 cell.appendChild(
                     taskElement
@@ -582,26 +596,23 @@ function renderCalendar() {
             cell.appendChild(more);
         }
 
-
         grid.appendChild(cell);
     }
 
 
-    /* -----------------------------------------------------
-       NEXT MONTH PADDING
-    ----------------------------------------------------- */
+    // -----------------------------------------------------
+    // NEXT MONTH PADDING
+    // -----------------------------------------------------
 
     const totalCells =
         firstDay +
         daysInMonth;
-
 
     const remaining =
         (
             7 -
             (totalCells % 7)
         ) % 7;
-
 
     for (
         let i = 1;
@@ -628,9 +639,9 @@ function renderCalendar() {
 }
 
 
-/* =========================================================
-   CALENDAR CONTROLS
-========================================================= */
+// =========================================================
+// CALENDAR CONTROLS
+// =========================================================
 
 document
     .getElementById("prevMonth")
@@ -638,9 +649,11 @@ document
         "click",
         () => {
 
-            currentCalendarDate.setMonth(
-                currentCalendarDate.getMonth() - 1
-            );
+            currentCalendarDate
+                .setMonth(
+                    currentCalendarDate
+                        .getMonth() - 1
+                );
 
             renderCalendar();
         }
@@ -653,9 +666,11 @@ document
         "click",
         () => {
 
-            currentCalendarDate.setMonth(
-                currentCalendarDate.getMonth() + 1
-            );
+            currentCalendarDate
+                .setMonth(
+                    currentCalendarDate
+                        .getMonth() + 1
+                );
 
             renderCalendar();
         }
@@ -676,87 +691,162 @@ document
     );
 
 
-/* =========================================================
-   TASK MODAL
-========================================================= */
+// =========================================================
+// TASK ASSIGNEE DISPLAY
+// =========================================================
+
+function getTaskMembers(task) {
+
+    if (
+        Array.isArray(
+            task.assigned_members
+        )
+    ) {
+
+        return task.assigned_members;
+    }
+
+    if (
+        Array.isArray(
+            task.assignments
+        )
+    ) {
+
+        return task.assignments;
+    }
+
+    return [];
+}
+
+
+function renderAssigneeNames(task) {
+
+    const members =
+        getTaskMembers(task);
+
+    if (!members.length) {
+        return "No members";
+    }
+
+    const names =
+        members.map(
+            member =>
+                member.member_name ||
+                member.name ||
+                "Member"
+        );
+
+    if (names.length <= 2) {
+        return names.join(", ");
+    }
+
+    return `${names[0]}, ${names[1]} +${
+        names.length - 2
+    } more`;
+}
+
+
+// =========================================================
+// TASK MODAL
+// =========================================================
 
 function openTaskModal(task) {
 
-    const title =
+    const titleEl =
         document.getElementById(
             "modalTaskTitle"
         );
 
-    const description =
+    const descEl =
         document.getElementById(
             "modalTaskDescription"
         );
 
-    const status =
+    const statusEl =
         document.getElementById(
             "modalTaskStatus"
         );
 
-    const assignee =
+    const assigneeEl =
         document.getElementById(
             "modalTaskAssignee"
         );
 
-    const due =
+    const dueEl =
         document.getElementById(
             "modalTaskDueDate"
         );
 
 
-    if (title) {
-        title.textContent =
+    if (titleEl) {
+
+        titleEl.textContent =
             task.title ||
             "Untitled task";
     }
 
 
-    if (description) {
-        description.textContent =
+    if (descEl) {
+
+        descEl.textContent =
             task.description ||
             "No description available.";
     }
 
 
-    if (status) {
-        status.textContent =
+    if (statusEl) {
+
+        statusEl.textContent =
             task.status ||
             "Assigned";
     }
 
 
-    if (assignee) {
+    if (assigneeEl) {
 
-        if (
-            Array.isArray(
-                task.assigned_members
-            ) &&
-            task.assigned_members.length
-        ) {
+        const members =
+            getTaskMembers(task);
 
-            assignee.textContent =
-                task.assigned_members
-                    .map(
-                        member =>
-                            `${member.name} (${member.status})`
-                    )
-                    .join(", ");
+        if (!members.length) {
+
+            assigneeEl.textContent =
+                "—";
 
         } else {
 
-            assignee.textContent =
-                task.assigned_name ||
-                "—";
+            assigneeEl.innerHTML =
+                members
+                    .map(member => `
+                        <div>
+                            <strong>
+                                ${escapeHtml(
+                                    member.member_name ||
+                                    member.name ||
+                                    "Member"
+                                )}
+                            </strong>
+
+                            ${
+                                member.member_email
+                                    ? `
+                                    <small>
+                                        ${escapeHtml(
+                                            member.member_email
+                                        )}
+                                    </small>
+                                    `
+                                    : ""
+                            }
+                        </div>
+                    `)
+                    .join("");
         }
     }
 
 
-    if (due) {
-        due.textContent =
+    if (dueEl) {
+
+        dueEl.textContent =
             formatDateOnly(
                 task.due_date
             );
@@ -764,12 +854,18 @@ function openTaskModal(task) {
 
 
     document
-        .getElementById("taskModal")
+        .getElementById(
+            "taskModal"
+        )
         ?.classList.remove(
             "hidden"
         );
 }
 
+
+// =========================================================
+// CLOSE MODAL
+// =========================================================
 
 document
     .getElementById("closeTaskModal")
@@ -778,7 +874,9 @@ document
         () => {
 
             document
-                .getElementById("taskModal")
+                .getElementById(
+                    "taskModal"
+                )
                 ?.classList.add(
                     "hidden"
                 );
@@ -806,9 +904,9 @@ document
     );
 
 
-/* =========================================================
-   TASKS
-========================================================= */
+// =========================================================
+// LOAD TASKS
+// =========================================================
 
 async function loadTasks() {
 
@@ -819,14 +917,7 @@ async function loadTasks() {
                 "/api/tasks"
             );
 
-
-        if (!Array.isArray(tasks)) {
-            tasks = [];
-        }
-
-
         renderTasks();
-
 
     } catch (error) {
 
@@ -837,6 +928,10 @@ async function loadTasks() {
     }
 }
 
+
+// =========================================================
+// RENDER TASKS
+// =========================================================
 
 function renderTasks() {
 
@@ -857,6 +952,7 @@ function renderTasks() {
 
 
     if (count) {
+
         count.textContent =
             tasks.length;
     }
@@ -880,10 +976,11 @@ function renderTasks() {
 
     if (!tasks.length) {
 
-        list.innerHTML =
-            `<div class="audit-empty">
+        list.innerHTML = `
+            <div class="audit-empty">
                 No tasks assigned yet.
-            </div>`;
+            </div>
+        `;
 
         renderCalendar();
 
@@ -910,50 +1007,20 @@ function renderTasks() {
             "Assigned";
 
 
-        let assigneeText =
-            task.assigned_name ||
-            "—";
+        const members =
+            getTaskMembers(task);
 
 
-        if (
-            Array.isArray(
-                task.assigned_members
-            ) &&
-            task.assigned_members.length
-        ) {
-
-            if (
-                me?.role === "head"
-            ) {
-
-                assigneeText =
-                    task.assigned_members
-                        .map(
-                            member =>
-                                member.name
-                        )
-                        .join(", ");
-
-            } else {
-
-                const mine =
-                    task.assigned_members
-                        .find(
-                            member =>
-                                member.id ===
-                                me.id
-                        );
+        const memberNames =
+            renderAssigneeNames(task);
 
 
-                assigneeText =
-                    mine?.name ||
-                    me.name ||
-                    "Assigned";
-            }
-        }
+        const memberCount =
+            members.length;
 
 
         card.innerHTML = `
+
             <div class="task-card-head">
 
                 <h3>
@@ -964,10 +1031,13 @@ function renderTasks() {
                 </h3>
 
                 <span class="badge">
-                    ${escapeHtml(status)}
+                    ${escapeHtml(
+                        status
+                    )}
                 </span>
 
             </div>
+
 
             <p>
                 ${escapeHtml(
@@ -975,6 +1045,37 @@ function renderTasks() {
                     "No description available."
                 )}
             </p>
+
+
+            <div class="task-assignees">
+
+                <span class="task-assignee-label">
+                    Assigned to
+                </span>
+
+                <span class="task-assignee-names">
+                    ${escapeHtml(
+                        memberNames
+                    )}
+                </span>
+
+                ${
+                    memberCount
+                        ? `
+                            <span class="task-member-count">
+                                ${memberCount}
+                                ${
+                                    memberCount === 1
+                                        ? "member"
+                                        : "members"
+                                }
+                            </span>
+                          `
+                        : ""
+                }
+
+            </div>
+
 
             <div class="task-meta">
 
@@ -987,42 +1088,43 @@ function renderTasks() {
                     )}
                 </span>
 
-                <span class="task-assignees">
-                    ${escapeHtml(
-                        assigneeText
-                    )}
-                </span>
-
                 <select
-                    class="status-select">
+                    class="status-select"
+                >
 
                     <option
                         value="Assigned"
                         ${
-                            status === "Assigned"
+                            status ===
+                            "Assigned"
                                 ? "selected"
                                 : ""
-                        }>
+                        }
+                    >
                         Assigned
                     </option>
 
                     <option
                         value="In Progress"
                         ${
-                            status === "In Progress"
+                            status ===
+                            "In Progress"
                                 ? "selected"
                                 : ""
-                        }>
+                        }
+                    >
                         In Progress
                     </option>
 
                     <option
                         value="Completed"
                         ${
-                            status === "Completed"
+                            status ===
+                            "Completed"
                                 ? "selected"
                                 : ""
-                        }>
+                        }
+                    >
                         Completed
                     </option>
 
@@ -1038,16 +1140,14 @@ function renderTasks() {
             );
 
 
-        select?.addEventListener(
+        select.addEventListener(
             "change",
             async event => {
 
                 event.stopPropagation();
 
-
                 const newStatus =
                     select.value;
-
 
                 try {
 
@@ -1061,20 +1161,23 @@ function renderTasks() {
                                     "application/json"
                             },
 
-                            body: JSON.stringify({
-                                status:
-                                    newStatus
-                            })
+                            body:
+                                JSON.stringify({
+                                    status:
+                                        newStatus
+                                })
                         }
                     );
 
-
-                    task.status =
-                        newStatus;
-
-
                     await loadTasks();
 
+                    if (
+                        me?.role ===
+                        "head"
+                    ) {
+
+                        await loadAudit();
+                    }
 
                 } catch (error) {
 
@@ -1083,7 +1186,8 @@ function renderTasks() {
                     );
 
                     select.value =
-                        task.status;
+                        task.status ||
+                        "Assigned";
                 }
             }
         );
@@ -1099,9 +1203,9 @@ function renderTasks() {
                     event.target.tagName ===
                         "OPTION"
                 ) {
+
                     return;
                 }
-
 
                 openTaskModal(task);
             }
@@ -1116,9 +1220,9 @@ function renderTasks() {
 }
 
 
-/* =========================================================
-   MEMBERS
-========================================================= */
+// =========================================================
+// MEMBERS
+// =========================================================
 
 async function loadMembers() {
 
@@ -1129,17 +1233,14 @@ async function loadMembers() {
                 "/api/members"
             );
 
-
         const memberList =
             document.getElementById(
                 "memberList"
             );
 
-
         if (!memberList) {
             return;
         }
-
 
         memberList.innerHTML = "";
 
@@ -1156,6 +1257,7 @@ async function loadMembers() {
 
 
             row.innerHTML = `
+
                 <div>
 
                     <strong>
@@ -1180,16 +1282,18 @@ async function loadMembers() {
 
                 </div>
 
-                <button
-                    class="ghost-btn">
 
+                <button
+                    type="button"
+                    class="ghost-btn"
+                >
                     ${
                         member.active
                             ? "Disable"
                             : "Enable"
                     }
-
                 </button>
+
             `;
 
 
@@ -1199,13 +1303,15 @@ async function loadMembers() {
                 );
 
 
-            button?.addEventListener(
+            button.addEventListener(
                 "click",
-                () =>
+                () => {
+
                     toggleMember(
                         member.id,
                         !member.active
-                    )
+                    );
+                }
             );
 
 
@@ -1213,7 +1319,6 @@ async function loadMembers() {
                 row
             );
         });
-
 
     } catch (error) {
 
@@ -1225,9 +1330,9 @@ async function loadMembers() {
 }
 
 
-/* =========================================================
-   TOGGLE MEMBER
-========================================================= */
+// =========================================================
+// TOGGLE MEMBER
+// =========================================================
 
 async function toggleMember(
     id,
@@ -1246,19 +1351,18 @@ async function toggleMember(
                         "application/json"
                 },
 
-                body: JSON.stringify({
-                    active
-                })
+                body:
+                    JSON.stringify({
+                        active
+                    })
             }
         );
-
 
         await loadMembers();
 
         await loadTaskMembers();
 
         await loadAudit();
-
 
     } catch (error) {
 
@@ -1269,9 +1373,9 @@ async function toggleMember(
 }
 
 
-/* =========================================================
-   TASK MEMBER SELECTOR
-========================================================= */
+// =========================================================
+// TASK MEMBER SELECTOR
+// =========================================================
 
 async function loadTaskMembers() {
 
@@ -1279,7 +1383,6 @@ async function loadTaskMembers() {
         document.getElementById(
             "memberCheckboxList"
         );
-
 
     if (!list) {
         return;
@@ -1293,23 +1396,22 @@ async function loadTaskMembers() {
                 "/api/members"
             );
 
-
         availableMembers =
             Array.isArray(data)
                 ? data
-                : [];
-
+                : (
+                    data.members ||
+                    []
+                );
 
         renderTaskMembers();
-
 
     } catch (error) {
 
         console.error(
-            "Unable to load task members:",
+            "Failed to load task members:",
             error
         );
-
 
         list.innerHTML = `
             <div class="member-loading">
@@ -1320,9 +1422,9 @@ async function loadTaskMembers() {
 }
 
 
-/* =========================================================
-   RENDER MEMBERS
-========================================================= */
+// =========================================================
+// RENDER TASK MEMBERS
+// =========================================================
 
 function renderTaskMembers() {
 
@@ -1330,7 +1432,6 @@ function renderTaskMembers() {
         document.getElementById(
             "memberCheckboxList"
         );
-
 
     if (!list) {
         return;
@@ -1369,12 +1470,12 @@ function renderTaskMembers() {
                     "label"
                 );
 
-
             wrapper.className =
                 "member-checkbox";
 
 
             wrapper.innerHTML = `
+
                 <input
                     type="checkbox"
                     class="member-select"
@@ -1383,39 +1484,39 @@ function renderTaskMembers() {
                     )}"
                     data-team-id="${escapeHtml(
                         member.team_member_id
-                    )}">
+                    )}"
+                >
 
                 <div
-                    class="member-checkbox-info">
+                    class="member-checkbox-info"
+                >
 
                     <span
-                        class="member-checkbox-name">
-
+                        class="member-checkbox-name"
+                    >
                         ${escapeHtml(
                             member.name
                         )}
-
                     </span>
 
                     <span
-                        class="member-checkbox-id">
-
+                        class="member-checkbox-id"
+                    >
                         ${escapeHtml(
                             member.team_member_id
                         )}
-
                     </span>
 
                 </div>
 
                 <span
-                    class="member-checkbox-email">
-
+                    class="member-checkbox-email"
+                >
                     ${escapeHtml(
                         member.email
                     )}
-
                 </span>
+
             `;
 
 
@@ -1445,9 +1546,9 @@ function renderTaskMembers() {
 }
 
 
-/* =========================================================
-   SELECTED MEMBER IDS
-========================================================= */
+// =========================================================
+// SELECTED MEMBER IDS
+// =========================================================
 
 function getSelectedMemberIds() {
 
@@ -1462,9 +1563,9 @@ function getSelectedMemberIds() {
 }
 
 
-/* =========================================================
-   SELECTED MEMBER COUNT
-========================================================= */
+// =========================================================
+// MEMBER COUNT
+// =========================================================
 
 function updateSelectedMemberCount() {
 
@@ -1472,7 +1573,6 @@ function updateSelectedMemberCount() {
         document.getElementById(
             "selectedMemberCount"
         );
-
 
     if (!count) {
         return;
@@ -1490,13 +1590,8 @@ function updateSelectedMemberCount() {
                     member.active !== false
             ).length;
 
-
         count.textContent =
-            `${activeCount} member${
-                activeCount === 1
-                    ? ""
-                    : "s"
-            }`;
+            `${activeCount} members`;
 
         return;
     }
@@ -1505,15 +1600,14 @@ function updateSelectedMemberCount() {
     const selected =
         getSelectedMemberIds();
 
-
     count.textContent =
         `${selected.length} selected`;
 }
 
 
-/* =========================================================
-   ASSIGNMENT MODE
-========================================================= */
+// =========================================================
+// ASSIGNMENT MODE
+// =========================================================
 
 document
     .getElementById(
@@ -1526,11 +1620,9 @@ document
             assignmentMode =
                 "members";
 
-
             this.classList.add(
                 "active"
             );
-
 
             document
                 .getElementById(
@@ -1540,7 +1632,6 @@ document
                     "active"
                 );
 
-
             document
                 .getElementById(
                     "memberSelector"
@@ -1548,7 +1639,6 @@ document
                 ?.classList.remove(
                     "hidden"
                 );
-
 
             updateSelectedMemberCount();
         }
@@ -1566,11 +1656,9 @@ document
             assignmentMode =
                 "all";
 
-
             this.classList.add(
                 "active"
             );
-
 
             document
                 .getElementById(
@@ -1580,7 +1668,6 @@ document
                     "active"
                 );
 
-
             document
                 .getElementById(
                     "memberSelector"
@@ -1589,15 +1676,14 @@ document
                     "hidden"
                 );
 
-
             updateSelectedMemberCount();
         }
     );
 
 
-/* =========================================================
-   SELECT ALL
-========================================================= */
+// =========================================================
+// SELECT ALL
+// =========================================================
 
 document
     .getElementById(
@@ -1605,7 +1691,7 @@ document
     )
     ?.addEventListener(
         "click",
-        () => {
+        function () {
 
             document
                 .querySelectorAll(
@@ -1618,15 +1704,14 @@ document
                     }
                 );
 
-
             updateSelectedMemberCount();
         }
     );
 
 
-/* =========================================================
-   CLEAR MEMBERS
-========================================================= */
+// =========================================================
+// CLEAR ALL
+// =========================================================
 
 document
     .getElementById(
@@ -1634,7 +1719,7 @@ document
     )
     ?.addEventListener(
         "click",
-        () => {
+        function () {
 
             document
                 .querySelectorAll(
@@ -1647,15 +1732,14 @@ document
                     }
                 );
 
-
             updateSelectedMemberCount();
         }
     );
 
 
-/* =========================================================
-   CREATE TASK
-========================================================= */
+// =========================================================
+// CREATE TASK
+// =========================================================
 
 document
     .getElementById(
@@ -1680,7 +1764,8 @@ document
                     availableMembers
                         .filter(
                             member =>
-                                member.active !== false
+                                member.active !==
+                                false
                         )
                         .map(
                             member =>
@@ -1693,6 +1778,10 @@ document
                     getSelectedMemberIds();
             }
 
+
+            // -------------------------------------------------
+            // VALIDATE ASSIGNEES
+            // -------------------------------------------------
 
             if (!assignedTo.length) {
 
@@ -1732,18 +1821,23 @@ document
             }
 
 
+            // -------------------------------------------------
+            // DISABLE BUTTON
+            // -------------------------------------------------
+
             const submitButton =
                 event.target.querySelector(
-                    "button[type='submit']"
+                    'button[type="submit"]'
                 );
+
+            const originalText =
+                submitButton?.textContent;
 
 
             if (submitButton) {
+
                 submitButton.disabled =
                     true;
-
-                submitButton.dataset.originalText =
-                    submitButton.textContent;
 
                 submitButton.textContent =
                     "Assigning...";
@@ -1765,10 +1859,14 @@ document
 
                             body:
                                 JSON.stringify({
+
                                     title,
+
                                     description,
+
                                     assigned_to:
                                         assignedTo,
+
                                     due_date:
                                         dueDate
                                 })
@@ -1776,9 +1874,9 @@ document
                     );
 
 
-                /* -----------------------------------------
-                   RESET FORM
-                ----------------------------------------- */
+                // -------------------------------------------------
+                // RESET FORM
+                // -------------------------------------------------
 
                 event.target.reset();
 
@@ -1786,12 +1884,10 @@ document
                 selectedDateValue =
                     null;
 
-
                 const selectedDateLabel =
                     document.getElementById(
                         "selectedDate"
                     );
-
 
                 if (selectedDateLabel) {
 
@@ -1800,12 +1896,15 @@ document
                 }
 
 
-                if (
-                    typeof renderDatePicker ===
-                    "function"
-                ) {
+                const dueDateInput =
+                    document.getElementById(
+                        "dueDate"
+                    );
 
-                    renderDatePicker();
+                if (dueDateInput) {
+
+                    dueDateInput.value =
+                        "";
                 }
 
 
@@ -1821,42 +1920,84 @@ document
                     );
 
 
+                assignmentMode =
+                    "members";
+
+
+                document
+                    .getElementById(
+                        "specificMembersBtn"
+                    )
+                    ?.classList.add(
+                        "active"
+                    );
+
+
+                document
+                    .getElementById(
+                        "allMembersBtn"
+                    )
+                    ?.classList.remove(
+                        "active"
+                    );
+
+
+                document
+                    .getElementById(
+                        "memberSelector"
+                    )
+                    ?.classList.remove(
+                        "hidden"
+                    );
+
+
                 updateSelectedMemberCount();
 
+                renderDatePicker();
 
-                /* -----------------------------------------
-                   REFRESH
-                ----------------------------------------- */
+
+                // -------------------------------------------------
+                // REFRESH
+                // -------------------------------------------------
 
                 await loadTasks();
 
                 await loadAudit();
 
 
-                const sent =
-                    result.notification_sent_count ||
-                    0;
-
-                const assigned =
+                const assignedCount =
                     result.assigned_count ||
                     assignedTo.length;
 
 
+                const notificationCount =
+                    result.notification_count ||
+                    0;
+
+
                 alert(
-                    `Task assigned to ${assigned} member${
-                        assigned === 1
+                    `Task assigned successfully to ` +
+                    `${assignedCount} member${
+                        assignedCount === 1
                             ? ""
                             : "s"
-                    }. Email notifications sent: ${sent}.`
+                    }.\n\n` +
+                    `Email notifications sent: ` +
+                    `${notificationCount}/${assignedCount}.`
                 );
 
 
             } catch (error) {
 
-                alert(
-                    error.message
+                console.error(
+                    "TASK ASSIGNMENT ERROR:",
+                    error
                 );
 
+                alert(
+                    error.message ||
+                    "Task could not be assigned."
+                );
 
             } finally {
 
@@ -1866,16 +2007,17 @@ document
                         false;
 
                     submitButton.textContent =
-                        "Assign Task →";
+                        originalText ||
+                        "Assign Task";
                 }
             }
         }
     );
 
 
-/* =========================================================
-   CREATE MEMBER
-========================================================= */
+// =========================================================
+// MEMBER MANAGEMENT FORM
+// =========================================================
 
 document
     .getElementById(
@@ -1902,32 +2044,40 @@ document
 
                         body:
                             JSON.stringify({
+
                                 name:
-                                    document.getElementById(
-                                        "newName"
-                                    )?.value || "",
+                                    document
+                                        .getElementById(
+                                            "newName"
+                                        )
+                                        ?.value || "",
 
                                 email:
-                                    document.getElementById(
-                                        "newEmail"
-                                    )?.value || "",
+                                    document
+                                        .getElementById(
+                                            "newEmail"
+                                        )
+                                        ?.value || "",
 
                                 phone:
-                                    document.getElementById(
-                                        "newPhone"
-                                    )?.value || "",
+                                    document
+                                        .getElementById(
+                                            "newPhone"
+                                        )
+                                        ?.value || "",
 
                                 team_member_id:
-                                    document.getElementById(
-                                        "newMemberId"
-                                    )?.value || ""
+                                    document
+                                        .getElementById(
+                                            "newMemberId"
+                                        )
+                                        ?.value || ""
                             })
                     }
                 );
 
 
                 event.target.reset();
-
 
                 await loadMembers();
 
@@ -1951,9 +2101,9 @@ document
     );
 
 
-/* =========================================================
-   LOGOUT
-========================================================= */
+// =========================================================
+// LOGOUT
+// =========================================================
 
 document
     .getElementById(
@@ -1987,9 +2137,235 @@ document
     );
 
 
-/* =========================================================
-   CUSTOM DATE PICKER
-========================================================= */
+// =========================================================
+// AUDIT
+// =========================================================
+
+async function loadAudit() {
+
+    try {
+
+        const data =
+            await api(
+                "/api/audit"
+            );
+
+        renderAudit(data);
+
+    } catch (error) {
+
+        console.error(
+            "Failed to load audit:",
+            error
+        );
+    }
+}
+
+
+function formatAuditAction(action) {
+
+    const actionMap = {
+
+        "HEAD_LOGIN_SUCCESS":
+            "Head signed in",
+
+        "HEAD_LOGIN_FAILED":
+            "Failed head login",
+
+        "MEMBER_LOGIN_SUCCESS":
+            "Member signed in",
+
+        "MEMBER_LOGIN_FAILED":
+            "Failed member login",
+
+        "LOGOUT":
+            "Signed out",
+
+        "TASK_CREATED":
+            "Task assigned",
+
+        "TASK_STATUS_UPDATED":
+            "Task status updated",
+
+        "MEMBER_CREATED":
+            "Team member added",
+
+        "MEMBER_STATUS_UPDATED":
+            "Member status changed"
+    };
+
+
+    return (
+        actionMap[action] ||
+        action ||
+        "Activity"
+    );
+}
+
+
+function renderAudit(logs = []) {
+
+    const container =
+        document.getElementById(
+            "auditList"
+        );
+
+    const count =
+        document.getElementById(
+            "auditCount"
+        );
+
+
+    if (!container) {
+        return;
+    }
+
+
+    if (count) {
+
+        count.textContent =
+            `${logs.length} event${
+                logs.length === 1
+                    ? ""
+                    : "s"
+            }`;
+    }
+
+
+    if (!logs.length) {
+
+        container.innerHTML = `
+            <div class="audit-empty">
+                No security events recorded.
+            </div>
+        `;
+
+        return;
+    }
+
+
+    container.innerHTML = "";
+
+
+    logs.forEach(log => {
+
+        const item =
+            document.createElement(
+                "div"
+            );
+
+        item.className =
+            "audit-item";
+
+
+        const action =
+            log.action ||
+            "Activity";
+
+
+        const metadata =
+            log.metadata ||
+            {};
+
+
+        const user =
+            metadata.name ||
+            metadata.email ||
+            metadata.team_member_id ||
+            log.user_id ||
+            "System";
+
+
+        const timestamp =
+            log.created_at;
+
+
+        item.innerHTML = `
+
+            <div class="audit-dot"></div>
+
+            <div class="audit-content">
+
+                <div class="audit-action">
+                    ${escapeHtml(
+                        formatAuditAction(
+                            action
+                        )
+                    )}
+                </div>
+
+                <div class="audit-user">
+                    ${escapeHtml(
+                        user
+                    )}
+                </div>
+
+                ${
+                    metadata.member_count
+                        ? `
+                            <div class="audit-detail">
+                                ${escapeHtml(
+                                    String(
+                                        metadata.member_count
+                                    )
+                                )}
+                                members assigned
+                            </div>
+                          `
+                        : ""
+                }
+
+                ${
+                    log.ip
+                        ? `
+                            <div class="audit-ip">
+                                IP:
+                                ${escapeHtml(
+                                    log.ip
+                                )}
+                            </div>
+                          `
+                        : ""
+                }
+
+            </div>
+
+            <div
+                class="audit-time"
+                title="${escapeHtml(
+                    formatDateTime(
+                        timestamp
+                    )
+                )}"
+            >
+                ${escapeHtml(
+                    relativeTime(
+                        timestamp
+                    )
+                )}
+
+                <br>
+
+                ${escapeHtml(
+                    formatDateTime(
+                        timestamp
+                    )
+                )}
+            </div>
+
+        `;
+
+
+        container.appendChild(
+            item
+        );
+    });
+}
+
+
+// =========================================================
+// CUSTOM DATE PICKER
+// =========================================================
 
 const datePickerButton =
     document.getElementById(
@@ -2022,9 +2398,9 @@ const dueDateInput =
     );
 
 
-/* =========================================================
-   OPEN DATE PICKER
-========================================================= */
+// =========================================================
+// OPEN / CLOSE
+// =========================================================
 
 datePickerButton
     ?.addEventListener(
@@ -2033,16 +2409,13 @@ datePickerButton
 
             event.stopPropagation();
 
-
             if (!datePicker) {
                 return;
             }
 
-
             datePicker.classList.toggle(
                 "hidden"
             );
-
 
             datePickerButton.classList.toggle(
                 "active",
@@ -2051,15 +2424,14 @@ datePickerButton
                 )
             );
 
-
             renderDatePicker();
         }
     );
 
 
-/* =========================================================
-   PREVIOUS MONTH
-========================================================= */
+// =========================================================
+// PREVIOUS MONTH
+// =========================================================
 
 document
     .getElementById(
@@ -2071,20 +2443,18 @@ document
 
             event.stopPropagation();
 
-
             pickerDate.setMonth(
                 pickerDate.getMonth() - 1
             );
-
 
             renderDatePicker();
         }
     );
 
 
-/* =========================================================
-   NEXT MONTH
-========================================================= */
+// =========================================================
+// NEXT MONTH
+// =========================================================
 
 document
     .getElementById(
@@ -2096,20 +2466,18 @@ document
 
             event.stopPropagation();
 
-
             pickerDate.setMonth(
                 pickerDate.getMonth() + 1
             );
-
 
             renderDatePicker();
         }
     );
 
 
-/* =========================================================
-   TODAY
-========================================================= */
+// =========================================================
+// TODAY
+// =========================================================
 
 document
     .getElementById(
@@ -2121,38 +2489,38 @@ document
 
             event.stopPropagation();
 
-
             const today =
                 new Date();
 
-
             pickerDate =
                 new Date(today);
-
 
             setSelectedDate(
                 today
             );
 
+            if (datePicker) {
 
-            datePicker?.classList.add(
-                "hidden"
-            );
+                datePicker.classList.add(
+                    "hidden"
+                );
+            }
 
+            if (datePickerButton) {
 
-            datePickerButton?.classList.remove(
-                "active"
-            );
-
+                datePickerButton.classList.remove(
+                    "active"
+                );
+            }
 
             renderDatePicker();
         }
     );
 
 
-/* =========================================================
-   CLEAR DATE
-========================================================= */
+// =========================================================
+// CLEAR DATE
+// =========================================================
 
 document
     .getElementById(
@@ -2164,16 +2532,14 @@ document
 
             event.stopPropagation();
 
-
             selectedDateValue =
                 null;
 
-
             if (dueDateInput) {
+
                 dueDateInput.value =
                     "";
             }
-
 
             if (selectedDate) {
 
@@ -2181,25 +2547,14 @@ document
                     "Select due date";
             }
 
-
-            datePicker?.classList.add(
-                "hidden"
-            );
-
-
-            datePickerButton?.classList.remove(
-                "active"
-            );
-
-
             renderDatePicker();
         }
     );
 
 
-/* =========================================================
-   OUTSIDE CLICK
-========================================================= */
+// =========================================================
+// CLOSE OUTSIDE
+// =========================================================
 
 document.addEventListener(
     "click",
@@ -2228,9 +2583,9 @@ document.addEventListener(
 );
 
 
-/* =========================================================
-   RENDER DATE PICKER
-========================================================= */
+// =========================================================
+// RENDER DATE PICKER
+// =========================================================
 
 function renderDatePicker() {
 
@@ -2288,9 +2643,9 @@ function renderDatePicker() {
         ).getDate();
 
 
-    /* -----------------------------------------------------
-       PREVIOUS MONTH DAYS
-    ----------------------------------------------------- */
+    // -----------------------------------------------------
+    // PREVIOUS MONTH
+    // -----------------------------------------------------
 
     for (
         let i = firstDay - 1;
@@ -2309,15 +2664,13 @@ function renderDatePicker() {
         day.textContent =
             previousMonthDays - i;
 
-        dateGrid.appendChild(
-            day
-        );
+        dateGrid.appendChild(day);
     }
 
 
-    /* -----------------------------------------------------
-       CURRENT MONTH
-    ----------------------------------------------------- */
+    // -----------------------------------------------------
+    // CURRENT MONTH
+    // -----------------------------------------------------
 
     const today =
         new Date();
@@ -2334,9 +2687,11 @@ function renderDatePicker() {
                 "div"
             );
 
-
         day.className =
             "date-day";
+
+        day.textContent =
+            dayNumber;
 
 
         const currentDay =
@@ -2350,10 +2705,8 @@ function renderDatePicker() {
         if (
             currentDay.getDate() ===
                 today.getDate() &&
-
             currentDay.getMonth() ===
                 today.getMonth() &&
-
             currentDay.getFullYear() ===
                 today.getFullYear()
         ) {
@@ -2366,13 +2719,10 @@ function renderDatePicker() {
 
         if (
             selectedDateValue &&
-
             currentDay.getFullYear() ===
                 selectedDateValue.getFullYear() &&
-
             currentDay.getMonth() ===
                 selectedDateValue.getMonth() &&
-
             currentDay.getDate() ===
                 selectedDateValue.getDate()
         ) {
@@ -2383,26 +2733,19 @@ function renderDatePicker() {
         }
 
 
-        day.textContent =
-            dayNumber;
-
-
         day.addEventListener(
             "click",
             event => {
 
                 event.stopPropagation();
 
-
                 setSelectedDate(
                     currentDay
                 );
 
-
                 datePicker?.classList.add(
                     "hidden"
                 );
-
 
                 datePickerButton?.classList.remove(
                     "active"
@@ -2411,15 +2754,13 @@ function renderDatePicker() {
         );
 
 
-        dateGrid.appendChild(
-            day
-        );
+        dateGrid.appendChild(day);
     }
 
 
-    /* -----------------------------------------------------
-       REMAINING DAYS
-    ----------------------------------------------------- */
+    // -----------------------------------------------------
+    // REMAINING
+    // -----------------------------------------------------
 
     const totalCells =
         firstDay +
@@ -2450,16 +2791,14 @@ function renderDatePicker() {
         day.textContent =
             i;
 
-        dateGrid.appendChild(
-            day
-        );
+        dateGrid.appendChild(day);
     }
 }
 
 
-/* =========================================================
-   SET SELECTED DATE
-========================================================= */
+// =========================================================
+// SET DATE
+// =========================================================
 
 function setSelectedDate(date) {
 
@@ -2486,7 +2825,6 @@ function setSelectedDate(date) {
         const year =
             date.getFullYear();
 
-
         const month =
             String(
                 date.getMonth() + 1
@@ -2494,7 +2832,6 @@ function setSelectedDate(date) {
                 2,
                 "0"
             );
-
 
         const day =
             String(
@@ -2511,231 +2848,9 @@ function setSelectedDate(date) {
 }
 
 
-/* =========================================================
-   AUDIT
-========================================================= */
-
-async function loadAudit() {
-
-    if (
-        me?.role !==
-        "head"
-    ) {
-        return;
-    }
-
-
-    try {
-
-        const data =
-            await api(
-                "/api/audit"
-            );
-
-
-        renderAudit(
-            Array.isArray(data)
-                ? data
-                : []
-        );
-
-
-    } catch (error) {
-
-        console.error(
-            "Failed to load audit:",
-            error
-        );
-    }
-}
-
-
-function formatAuditAction(action) {
-
-    const map = {
-
-        "HEAD_LOGIN_SUCCESS":
-            "Head login successful",
-
-        "HEAD_LOGIN_FAILED":
-            "Head login failed",
-
-        "MEMBER_LOGIN_SUCCESS":
-            "Member login successful",
-
-        "MEMBER_LOGIN_FAILED":
-            "Member login failed",
-
-        "LOGOUT":
-            "Signed out",
-
-        "TASK_CREATED":
-            "Task assigned",
-
-        "TASK_STATUS_UPDATED":
-            "Task status updated",
-
-        "MEMBER_CREATED":
-            "Team member added",
-
-        "MEMBER_ENABLED":
-            "Team member enabled",
-
-        "MEMBER_DISABLED":
-            "Team member disabled"
-    };
-
-
-    return (
-        map[action] ||
-        action ||
-        "Activity"
-    );
-}
-
-
-function renderAudit(logs = []) {
-
-    const container =
-        document.getElementById(
-            "auditList"
-        );
-
-    const count =
-        document.getElementById(
-            "auditCount"
-        );
-
-
-    if (!container) {
-        return;
-    }
-
-
-    if (count) {
-
-        count.textContent =
-            `${logs.length} event${
-                logs.length === 1
-                    ? ""
-                    : "s"
-            }`;
-    }
-
-
-    if (!logs.length) {
-
-        container.innerHTML =
-            `<div class="audit-empty">
-                No security events recorded.
-            </div>`;
-
-        return;
-    }
-
-
-    container.innerHTML = "";
-
-
-    logs.forEach(log => {
-
-        const item =
-            document.createElement(
-                "div"
-            );
-
-
-        item.className =
-            "audit-item";
-
-
-        const metadata =
-            log.metadata ||
-            {};
-
-
-        const user =
-            metadata.name ||
-            metadata.email ||
-            log.user_id ||
-            "System";
-
-
-        const timestamp =
-            log.created_at;
-
-
-        item.innerHTML = `
-
-            <div class="audit-dot"></div>
-
-            <div class="audit-content">
-
-                <div class="audit-action">
-                    ${escapeHtml(
-                        formatAuditAction(
-                            log.action
-                        )
-                    )}
-                </div>
-
-                <div class="audit-user">
-                    ${escapeHtml(
-                        user
-                    )}
-                </div>
-
-                ${
-                    log.ip
-                        ? `
-                            <div class="audit-ip">
-                                IP:
-                                ${escapeHtml(
-                                    log.ip
-                                )}
-                            </div>
-                          `
-                        : ""
-                }
-
-            </div>
-
-            <div
-                class="audit-time"
-                title="${escapeHtml(
-                    formatDateTime(
-                        timestamp
-                    )
-                )}">
-
-                ${escapeHtml(
-                    relativeTime(
-                        timestamp
-                    )
-                )}
-
-                <br>
-
-                ${escapeHtml(
-                    formatDateTime(
-                        timestamp
-                    )
-                )}
-
-            </div>
-        `;
-
-
-        container.appendChild(
-            item
-        );
-    });
-}
-
-
-/* =========================================================
-   START
-========================================================= */
+// =========================================================
+// START
+// =========================================================
 
 document.addEventListener(
     "DOMContentLoaded",
