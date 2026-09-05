@@ -1,39 +1,82 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Technical Team | Secure Access</title>
-<link rel="stylesheet" href="/static/app.css">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Technical Team | Secure Access</title>
+    <link rel="stylesheet" href="/static/app.css">
 </head>
 <body class="login-page">
-<main class="login-shell">
-<section class="brand-panel">
-<div class="brand-mark">TT</div>
-<p class="eyebrow">TECHNICAL TEAM</p>
-<h1>Command Center</h1>
-<p class="muted">Tasks, resources, team coordination and secure access.</p>
-<div class="status-pill"><span></span> System ready</div>
-</section>
-<section class="login-panel">
-<div class="tabs">
-<button class="tab active" data-tab="head">Head Access</button>
-<button class="tab" data-tab="member">Team Member Access</button>
-</div>
-<form id="headForm" class="login-form">
-<label>Account</label><input id="headIdentifier" autocomplete="username" required>
-<label>Password</label><input id="headPassword" type="password" autocomplete="current-password" required>
-<label>MPIN</label><input id="headMpin" type="password" autocomplete="one-time-code" required>
-<button class="primary-btn" type="submit">Sign in</button>
-</form>
-<form id="memberForm" class="login-form hidden">
-<label>Email</label><input id="memberEmail" type="email" autocomplete="username" required>
-<label>Mobile Number</label><input id="memberPhone" inputmode="tel" autocomplete="tel" required>
-<label>Team Member ID</label><input id="memberId" autocomplete="off" required>
-<button class="primary-btn" type="submit">Sign in</button>
-</form>
-<p id="loginMessage" class="message"></p>
-</section>
-</main>
-<script src="/static/login.js"></script>
+
+    <main class="login-shell">
+
+        <!-- BRAND PANEL -->
+        <section class="brand-panel">
+            <img src="/static/team-logo.png" alt="Team Logo" class="login-brand-logo">
+            
+            <p class="eyebrow">TECHNICAL TEAM</p>
+            <h1>Command Center</h1>
+            <p class="muted">Tasks, resources, team coordination and secure access.</p>
+            
+            <div class="status-pill">
+                <span></span> System ready
+            </div>
+        </section>
+
+        <!-- LOGIN FORM PANEL -->
+        <section class="login-panel">
+            
+            <div class="tabs">
+                <button class="tab active" data-tab="head">Head Access</button>
+                <button class="tab" data-tab="member">Team Member Access</button>
+            </div>
+
+            <!-- HEAD FORM -->
+            <form id="headForm" class="login-form">
+                <div class="form-field">
+                    <label for="headIdentifier">Account</label>
+                    <input id="headIdentifier" placeholder="Email or Mobile" autocomplete="username" required>
+                </div>
+
+                <div class="form-field">
+                    <label for="headPassword">Password</label>
+                    <input id="headPassword" type="password" placeholder="••••••••" autocomplete="current-password" required>
+                </div>
+
+                <div class="form-field">
+                    <label for="headMpin">MPIN</label>
+                    <input id="headMpin" type="password" placeholder="••••" autocomplete="one-time-code" required>
+                </div>
+
+                <button class="primary-btn" type="submit">Sign in</button>
+            </form>
+
+            <!-- MEMBER FORM -->
+            <form id="memberForm" class="login-form hidden">
+                <div class="form-field">
+                    <label for="memberEmail">Email</label>
+                    <input id="memberEmail" type="email" placeholder="name@domain.com" autocomplete="username" required>
+                </div>
+
+                <div class="form-field">
+                    <label for="memberPhone">Mobile Number</label>
+                    <input id="memberPhone" inputmode="tel" placeholder="Mobile Number" autocomplete="tel" required>
+                </div>
+
+                <div class="form-field">
+                    <label for="memberId">Team Member ID</label>
+                    <input id="memberId" placeholder="e.g. TM001" autocomplete="off" required>
+                </div>
+
+                <button class="primary-btn" type="submit">Sign in</button>
+            </form>
+
+            <p id="loginMessage" class="message"></p>
+
+        </section>
+
+    </main>
+
+    <script src="/static/login.js"></script>
 </body>
 </html>
