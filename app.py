@@ -19,7 +19,7 @@ app.secret_key = os.getenv("FLASK_SECRET_KEY", secrets.token_hex(32))
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
-    SESSION_COOKIE_SECURE = os.getenv("APP_ENV") == "production"
+    SESSION_COOKIE_SECURE = True
     PERMANENT_SESSION_LIFETIME=timedelta(hours=8),
 )
 
