@@ -58,10 +58,12 @@ async function init() {
         document.getElementById("headManagement")?.classList.remove("hidden");
         document.getElementById("auditPanel")?.classList.remove("hidden");
         await loadMembers();
+        await loadTaskMembers();
         await loadAudit();
     }
 
     await loadTasks();
+    renderDatePicker();
 }
 
 /* ==========================================
@@ -357,15 +359,7 @@ function renderTasks() {
 async function loadMembers() {
     try {
         const data = await api("/api/members");
-        const assignee = document.getElementById("assignee");
         const memberList = document.getElementById("memberList");
-
-        if (assignee) {
-            assignee.innerHTML = data
-                .filter(x => x.active)
-                .map(x => `<option value="${escapeHtml(x.id)}">${escapeHtml(x.team_member_id)} — ${escapeHtml(x.name)}</option>`)
-                .join("");
-        }
 
         if (memberList) {
             memberList.innerHTML = "";
@@ -398,6 +392,7 @@ async function toggleMember(id, active) {
             body: JSON.stringify({ active })
         });
         await loadMembers();
+        await loadTaskMembers();
     } catch (err) {
         alert(err.message);
     }
@@ -474,6 +469,19 @@ function renderAudit(logs = []) {
 
 document.getElementById("taskForm")?.addEventListener("submit", async e => {
     e.preventDefault();
+
+    let assignedTo = [];
+    if (assignmentMode === "all") {
+        assignedTo = availableMembers.filter(m => m.active !== false).map(m => m.id);
+    } else {
+        assignedTo = getSelectedMemberIds();
+    }
+
+    if (!assignedTo.length) {
+        alert("Please select at least one team member.");
+        return;
+    }
+
     try {
         await api("/api/tasks", {
             method: "POST",
@@ -481,10 +489,11 @@ document.getElementById("taskForm")?.addEventListener("submit", async e => {
             body: JSON.stringify({
                 title: document.getElementById("taskTitle")?.value || "",
                 description: document.getElementById("taskDescription")?.value || "",
-                assigned_to: document.getElementById("assignee")?.value || "",
+                assigned_to: assignedTo,
                 due_date: document.getElementById("dueDate")?.value || ""
             })
         });
+
         e.target.reset();
 
         /* Reset Custom Date Picker UI state */
@@ -493,8 +502,13 @@ document.getElementById("taskForm")?.addEventListener("submit", async e => {
         if (selectedDateLabel) selectedDateLabel.textContent = "Select due date";
         renderDatePicker();
 
+        /* Reset Custom Member Selector */
+        document.querySelectorAll(".member-select").forEach(cb => (cb.checked = false));
+        updateSelectedMemberCount();
+
         await loadTasks();
-        alert("Task assigned.");
+        if (me?.role === "head") await loadAudit();
+        alert("Task assigned successfully.");
     } catch (err) {
         alert(err.message);
     }
@@ -515,6 +529,8 @@ document.getElementById("memberFormAdmin")?.addEventListener("submit", async e =
         });
         e.target.reset();
         await loadMembers();
+        await loadTaskMembers();
+        if (me?.role === "head") await loadAudit();
     } catch (err) {
         alert(err.message);
     }
@@ -720,291 +736,149 @@ function setSelectedDate(date) {
 let availableMembers = [];
 let assignmentMode = "members";
 
-
 async function loadTaskMembers() {
-
-    const list =
-        document.getElementById("memberCheckboxList");
-
+    const list = document.getElementById("memberCheckboxList");
     if (!list) return;
 
-
     try {
-
-        const response =
-            await fetch("/api/members");
-
-
+        const response = await fetch("/api/members");
         if (!response.ok) {
             throw new Error("Unable to load members");
         }
 
-
-        const data =
-            await response.json();
-
-
-        availableMembers =
-            Array.isArray(data)
-                ? data
-                : data.members || [];
-
-
+        const data = await response.json();
+        availableMembers = Array.isArray(data) ? data : data.members || [];
         renderTaskMembers();
-
-
     } catch (error) {
-
         console.error(error);
-
         list.innerHTML = `
             <div class="member-loading">
                 Unable to load team members.
             </div>
         `;
-
     }
-
 }
 
-
 function renderTaskMembers() {
-
-    const list =
-        document.getElementById("memberCheckboxList");
-
+    const list = document.getElementById("memberCheckboxList");
     if (!list) return;
 
-
-    const activeMembers =
-        availableMembers.filter(
-            member => member.active !== false
-        );
-
+    const activeMembers = availableMembers.filter(
+        member => member.active !== false
+    );
 
     if (!activeMembers.length) {
-
         list.innerHTML = `
             <div class="member-loading">
                 No active team members available.
             </div>
         `;
-
         return;
     }
-
 
     list.innerHTML = "";
 
-
     activeMembers.forEach(member => {
-
-        const wrapper =
-            document.createElement("label");
-
-        wrapper.className =
-            "member-checkbox";
-
+        const wrapper = document.createElement("label");
+        wrapper.className = "member-checkbox";
 
         wrapper.innerHTML = `
-
             <input
                 type="checkbox"
                 class="member-select"
-                value="${escapeHtml(
-                    member.id
-                )}"
-                data-team-id="${escapeHtml(
-                    member.team_member_id
-                )}">
-
+                value="${escapeHtml(member.id)}"
+                data-team-id="${escapeHtml(member.team_member_id)}">
             <div class="member-checkbox-info">
-
                 <span class="member-checkbox-name">
-                    ${escapeHtml(
-                        member.name
-                    )}
+                    ${escapeHtml(member.name)}
                 </span>
-
                 <span class="member-checkbox-id">
-                    ${escapeHtml(
-                        member.team_member_id
-                    )}
+                    ${escapeHtml(member.team_member_id)}
                 </span>
-
             </div>
-
             <span class="member-checkbox-email">
-                ${escapeHtml(
-                    member.email
-                )}
+                ${escapeHtml(member.email)}
             </span>
-
         `;
 
-
         list.appendChild(wrapper);
-
     });
 
-
-    document
-        .querySelectorAll(".member-select")
-        .forEach(checkbox => {
-
-            checkbox.addEventListener(
-                "change",
-                updateSelectedMemberCount
-            );
-
-        });
-
+    document.querySelectorAll(".member-select").forEach(checkbox => {
+        checkbox.addEventListener("change", updateSelectedMemberCount);
+    });
 
     updateSelectedMemberCount();
-
 }
-
 
 function getSelectedMemberIds() {
-
     return Array.from(
-        document.querySelectorAll(
-            ".member-select:checked"
-        )
-    ).map(
-        checkbox => checkbox.value
-    );
-
+        document.querySelectorAll(".member-select:checked")
+    ).map(checkbox => checkbox.value);
 }
-
 
 function updateSelectedMemberCount() {
-
-    const count =
-        document.getElementById(
-            "selectedMemberCount"
-        );
-
+    const count = document.getElementById("selectedMemberCount");
     if (!count) return;
 
-
     if (assignmentMode === "all") {
-
-        const activeCount =
-            availableMembers.filter(
-                member => member.active !== false
-            ).length;
-
-        count.textContent =
-            `${activeCount} members`;
-
+        const activeCount = availableMembers.filter(
+            member => member.active !== false
+        ).length;
+        count.textContent = `${activeCount} members`;
         return;
-
     }
 
-
-    const selected =
-        getSelectedMemberIds();
-
-
-    count.textContent =
-        `${selected.length} selected`;
-
+    const selected = getSelectedMemberIds();
+    count.textContent = `${selected.length} selected`;
 }
-
 
 /* ==========================================
    ASSIGNMENT MODE
 ========================================== */
 
-document
-    .getElementById("specificMembersBtn")
-    ?.addEventListener("click", function () {
+document.getElementById("specificMembersBtn")?.addEventListener("click", function () {
+    assignmentMode = "members";
+    this.classList.add("active");
 
-        assignmentMode = "members";
+    document.getElementById("allMembersBtn")?.classList.remove("active");
+    document.getElementById("memberSelector")?.classList.remove("hidden");
 
-        this.classList.add("active");
+    updateSelectedMemberCount();
+});
 
-        document
-            .getElementById("allMembersBtn")
-            ?.classList.remove("active");
+document.getElementById("allMembersBtn")?.addEventListener("click", function () {
+    assignmentMode = "all";
+    this.classList.add("active");
 
-        document
-            .getElementById("memberSelector")
-            ?.classList.remove("hidden");
+    document.getElementById("specificMembersBtn")?.classList.remove("active");
+    document.getElementById("memberSelector")?.classList.add("hidden");
 
-        updateSelectedMemberCount();
-
-    });
-
-
-document
-    .getElementById("allMembersBtn")
-    ?.addEventListener("click", function () {
-
-        assignmentMode = "all";
-
-        this.classList.add("active");
-
-        document
-            .getElementById("specificMembersBtn")
-            ?.classList.remove("active");
-
-        document
-            .getElementById("memberSelector")
-            ?.classList.add("hidden");
-
-        updateSelectedMemberCount();
-
-    });
-
+    updateSelectedMemberCount();
+});
 
 /* ==========================================
    SELECT ALL / CLEAR
 ========================================== */
 
-document
-    .getElementById("selectAllMembers")
-    ?.addEventListener("click", function () {
-
-        document
-            .querySelectorAll(".member-select")
-            .forEach(checkbox => {
-
-                checkbox.checked = true;
-
-            });
-
-        updateSelectedMemberCount();
-
+document.getElementById("selectAllMembers")?.addEventListener("click", function () {
+    document.querySelectorAll(".member-select").forEach(checkbox => {
+        checkbox.checked = true;
     });
+    updateSelectedMemberCount();
+});
 
-
-document
-    .getElementById("clearAllMembers")
-    ?.addEventListener("click", function () {
-
-        document
-            .querySelectorAll(".member-select")
-            .forEach(checkbox => {
-
-                checkbox.checked = false;
-
-            });
-
-        updateSelectedMemberCount();
-
+document.getElementById("clearAllMembers")?.addEventListener("click", function () {
+    document.querySelectorAll(".member-select").forEach(checkbox => {
+        checkbox.checked = false;
     });
-
+    updateSelectedMemberCount();
+});
 
 /* ==========================================
-   INITIALIZE
+   AUTO START
 ========================================== */
 
-loadTaskMembers();
-
-/* Initial render */
-renderDatePicker();
-
-/* Kick off application */
-init();
+document.addEventListener("DOMContentLoaded", () => {
+    init();
+});
