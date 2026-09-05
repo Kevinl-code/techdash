@@ -15,11 +15,16 @@ from notifier import send_task_notification
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = os.getenv("FLASK_SECRET_KEY", secrets.token_hex(32))
+
+app.secret_key = os.getenv(
+    "FLASK_SECRET_KEY",
+    secrets.token_hex(32)
+)
+
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
-    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE=os.getenv("APP_ENV", "production") == "production",
     PERMANENT_SESSION_LIFETIME=timedelta(hours=8),
 )
 
