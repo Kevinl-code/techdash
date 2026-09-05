@@ -1017,3 +1017,109 @@
     }
 
 }
+/* ==========================================
+   MODERN FORM INPUTS & TEXTAREA STYLING
+========================================== */
+
+/* Input & Textarea Base Styling */
+.form-field input[type="text"],
+.form-field textarea,
+.stack input,
+.stack textarea,
+.member-form input {
+    width: 100%;
+    background: rgba(13, 16, 23, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 13px 16px;
+    color: #f6f7fb;
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.5;
+    outline: none;
+    backdrop-filter: blur(8px);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Custom Placeholder Styles */
+.form-field input[type="text"]::placeholder,
+.form-field textarea::placeholder,
+.stack input::placeholder,
+.stack textarea::placeholder,
+.member-form input::placeholder {
+    color: rgba(255, 255, 255, 0.28);
+    font-weight: 400;
+    font-size: 13px;
+    letter-spacing: 0.01em;
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+/* Hover States */
+.form-field input[type="text"]:hover,
+.form-field textarea:hover,
+.stack input:hover,
+.stack textarea:hover,
+.member-form input:hover {
+    background: rgba(18, 22, 31, 0.85);
+    border-color: rgba(255, 255, 255, 0.16);
+}
+
+.form-field input[type="text"]:hover::placeholder,
+.form-field textarea:hover::placeholder,
+.stack input:hover::placeholder,
+.stack textarea:hover::placeholder,
+.member-form input:hover::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+/* Focus States with Ambient Glow */
+.form-field input[type="text"]:focus,
+.form-field textarea:focus,
+.stack input:focus,
+.stack textarea:focus,
+.member-form input:focus {
+    background: rgba(18, 22, 32, 0.95);
+    border-color: rgba(255, 255, 255, 0.38);
+    box-shadow: 
+        0 0 0 4px rgba(255, 255, 255, 0.05),
+        0 8px 20px -4px rgba(0, 0, 0, 0.4);
+}
+
+.form-field input[type="text"]:focus::placeholder,
+.form-field textarea:focus::placeholder,
+.stack input:focus::placeholder,
+.stack textarea:focus::placeholder,
+.member-form input:focus::placeholder {
+    color: rgba(255, 255, 255, 0.18);
+    transform: translateX(3px);
+}
+
+/* Textarea Specific Enhancements */
+.form-field textarea,
+.stack textarea {
+    min-height: 110px;
+    resize: vertical;
+    line-height: 1.6;
+}
+
+/* Smooth Custom Scrollbar for Textarea */
+.form-field textarea::-webkit-scrollbar,
+.stack textarea::-webkit-scrollbar {
+    width: 6px;
+}
+
+.form-field textarea::-webkit-scrollbar-track,
+.stack textarea::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.form-field textarea::-webkit-scrollbar-thumb,
+.stack textarea::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 99px;
+}
+
+.form-field textarea::-webkit-scrollbar-thumb:hover,
+.stack textarea::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
