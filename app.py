@@ -3,7 +3,7 @@ import re
 import secrets
 from datetime import datetime, timedelta, timezone
 from functools import wraps
-
+from flask import send_from_directory
 import bcrypt
 from dotenv import load_dotenv
 from email_validator import EmailNotValidError, validate_email
