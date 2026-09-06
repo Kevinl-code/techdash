@@ -1606,13 +1606,19 @@ async function loadTasks() {
     try {
 
         tasks =
-            await api("/api/tasks");
+            await api(
+                "/api/tasks"
+            );
+
 
         if (!Array.isArray(tasks)) {
             tasks = [];
         }
 
+
         renderTasks();
+
+        renderNotificationPanel();
 
     } catch (error) {
 
@@ -1620,9 +1626,10 @@ async function loadTasks() {
             "Failed to load tasks:",
             error
         );
-    }
-}
 
+    }
+
+}
 
 /* =========================================================
    RENDER TASKS
