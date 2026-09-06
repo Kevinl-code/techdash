@@ -176,25 +176,13 @@ FETCH
 =========================================================
 */
 
-self.addEventListener(
-    "fetch",
-    event => {
-
-        if (
-            event.request.method !== "GET"
-        ) {
-            return;
-        }
-
-
-        event.respondWith(
-
-            fetch(event.request)
-                .catch(() =>
-                    caches.match(
-                        event.request
-                    )
-                )
-        );
-    }
-);
+self.addEventListener('fetch', (event) => {
+  event.respondWith(
+    caches.match(event.request).then((cachedResponse) => {
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+      return fetch(event.request); // Fallback to network if cache misses
+    })
+  );
+});
