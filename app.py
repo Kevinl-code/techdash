@@ -1277,6 +1277,11 @@ def create_task():
     for member in members:
         try:
             notification = send_task_notification(saved_task, member)
+            push_notification = send_web_push_to_user(user_id=member["id"],title="🔔 New Task Assigned",body=(f'{saved_task["title"]}'+ (f' • Due {saved_task["due_date"]}' if saved_task.get("due_date") else "")
+                ),
+                task_id=saved_task["id"],
+                notification_type="task_assigned"
+            )
 
             notification = (
                 notification
@@ -1294,6 +1299,8 @@ def create_task():
         notifications.append({
             "member_id": member["id"],
             "email": member["email"],
+            "email_notification": notification,
+            "push_notification": push_notification,
             **notification,
         })
 
@@ -1321,17 +1328,23 @@ def create_task():
     # FINAL RESPONSE
     # -----------------------------------------------------
 
-    successful_notifications = sum(
+    successful_email_notifications = sum(
         1
         for notification in notifications
-        if notification.get("success")
+        if notification.get("email_notification", {}).get("success")
+    )
+    successful_push_notifications = sum(
+        1
+        for notification in notifications
+        if notification.get("push_notification", {}).get("success")
     )
 
     return jsonify({
         "ok": True,
         "task_id": task_id,
         "assigned_count": len(members),
-        "notification_count": successful_notifications,
+        "email_notification_count":successful_email_notifications,
+        "push_notification_count":successful_push_notifications,
         "notifications": notifications,
     }), 201
 
