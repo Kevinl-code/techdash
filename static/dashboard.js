@@ -714,11 +714,13 @@ async function init() {
 
     try {
         me = await api("/api/me");
+        
 
         console.log(
             "Authenticated user:",
             me
         );
+        await initializePushNotifications();
 
     } catch (error) {
         console.error(
@@ -729,7 +731,342 @@ async function init() {
         window.location.href = "/";
         return;
     }
+   
+   
+function renderNotificationPanel() {
 
+    const list =
+        document.getElementById(
+            "notificationList"
+        );
+
+    const badge =
+        document.getElementById(
+            "notificationBadge"
+        );
+
+    const count =
+        document.getElementById(
+            "notificationPanelCount"
+        );
+
+
+    if (!list) {
+        return;
+    }
+
+
+    const recentTasks =
+        [...tasks]
+            .sort(
+                (a, b) =>
+                    new Date(
+                        b.created_at || 0
+                    ) -
+                    new Date(
+                        a.created_at || 0
+                    )
+            )
+            .slice(0, 10);
+
+
+    if (!recentTasks.length) {
+
+        list.innerHTML = `
+            <div class="notification-empty">
+                No notifications yet.
+            </div>
+        `;
+
+        if (badge) {
+            badge.classList.add("hidden");
+        }
+
+        if (count) {
+            count.textContent =
+                "0 unread";
+        }
+
+        return;
+    }
+
+
+    const unreadKey =
+        "readTaskNotifications";
+
+
+    const readIds =
+        JSON.parse(
+            localStorage.getItem(
+                unreadKey
+            ) || "[]"
+        );
+
+
+    const unreadTasks =
+        recentTasks.filter(
+            task =>
+                !readIds.includes(
+                    String(task.id)
+                )
+        );
+
+
+    if (badge) {
+
+        if (unreadTasks.length) {
+
+            badge.textContent =
+                unreadTasks.length > 99
+                    ? "99+"
+                    : unreadTasks.length;
+
+            badge.classList.remove(
+                "hidden"
+            );
+
+        } else {
+
+            badge.classList.add(
+                "hidden"
+            );
+
+        }
+
+    }
+
+
+    if (count) {
+
+        count.textContent =
+            `${unreadTasks.length} unread`;
+
+    }
+
+
+    list.innerHTML =
+        recentTasks
+            .map(task => {
+
+                const unread =
+                    !readIds.includes(
+                        String(task.id)
+                    );
+
+                return `
+
+                    <div
+                        class="
+                            notification-item
+                            ${unread ? "unread" : ""}
+                        "
+                        data-task-id="${escapeHtml(
+                            task.id
+                        )}"
+                    >
+
+                        <div
+                            class="notification-item-icon"
+                        >
+                            🔔
+                        </div>
+
+                        <div
+                            class="notification-item-content"
+                        >
+
+                            <strong>
+                                New Task Assigned
+                            </strong>
+
+                            <p>
+                                ${escapeHtml(
+                                    task.title
+                                )}
+                            </p>
+
+                            <small>
+                                ${escapeHtml(
+                                    relativeTime(
+                                        task.created_at
+                                    )
+                                )}
+                            </small>
+
+                        </div>
+
+                    </div>
+                `;
+
+            })
+            .join("");
+
+
+    list
+        .querySelectorAll(
+            ".notification-item"
+        )
+        .forEach(item => {
+
+            item.addEventListener(
+                "click",
+                () => {
+
+                    const id =
+                        item.dataset.taskId;
+
+                    const task =
+                        tasks.find(
+                            item =>
+                                String(
+                                    item.id
+                                ) ===
+                                String(id)
+                        );
+
+                    if (task) {
+
+                        markTaskNotificationRead(
+                            id
+                        );
+
+                        openTaskModal(
+                            task
+                        );
+
+                    }
+
+                }
+            );
+
+        });
+}
+
+function markTaskNotificationRead(
+    taskId
+) {
+
+    const key =
+        "readTaskNotifications";
+
+
+    const readIds =
+        JSON.parse(
+            localStorage.getItem(key) ||
+            "[]"
+        );
+
+
+    if (
+        !readIds.includes(
+            String(taskId)
+        )
+    ) {
+
+        readIds.push(
+            String(taskId)
+        );
+
+    }
+
+
+    localStorage.setItem(
+        key,
+        JSON.stringify(readIds)
+    );
+
+
+    renderNotificationPanel();
+}
+
+document
+    .getElementById(
+        "notificationBell"
+    )
+    ?.addEventListener(
+        "click",
+        event => {
+
+            event.stopPropagation();
+
+            const panel =
+                document.getElementById(
+                    "notificationPanel"
+                );
+
+            if (!panel) {
+                return;
+            }
+
+            panel.classList.toggle(
+                "hidden"
+            );
+
+        }
+    );
+
+document.addEventListener(
+    "click",
+    event => {
+
+        const panel =
+            document.getElementById(
+                "notificationPanel"
+            );
+
+        const bell =
+            document.getElementById(
+                "notificationBell"
+            );
+
+        if (
+            panel &&
+            !panel.contains(
+                event.target
+            ) &&
+            !bell?.contains(
+                event.target
+            )
+        ) {
+
+            panel.classList.add(
+                "hidden"
+            );
+
+        }
+
+    }
+);
+
+document
+    .getElementById(
+        "markNotificationsRead"
+    )
+    ?.addEventListener(
+        "click",
+        () => {
+
+            const key =
+                "readTaskNotifications";
+
+
+            const ids =
+                tasks.map(
+                    task =>
+                        String(task.id)
+                );
+
+
+            localStorage.setItem(
+                key,
+                JSON.stringify(ids)
+            );
+
+
+            renderNotificationPanel();
+
+        }
+    );
 
     /* -----------------------------------------------------
        USER INFORMATION
