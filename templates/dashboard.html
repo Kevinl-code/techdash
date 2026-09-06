@@ -3,6 +3,35 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link
+    rel="manifest"
+    href="/static/manifest.json"
+>
+
+<meta
+    name="theme-color"
+    content="#08090d"
+>
+
+<meta
+    name="mobile-web-app-capable"
+    content="yes"
+>
+
+<meta
+    name="apple-mobile-web-app-capable"
+    content="yes"
+>
+
+<meta
+    name="apple-mobile-web-app-status-bar-style"
+    content="black-translucent"
+>
+
+<link
+    rel="apple-touch-icon"
+    href="/static/icons/icon-192.png"
+>
 
     <title>Technical Team Dashboard</title>
 
@@ -74,17 +103,100 @@ main.dashboard {
     </div>
 
     <div class="user-area">
-        <div class="user-meta">
-            <strong id="userName">Loading...</strong>
-            <span id="roleBadge" class="badge"></span>
-        </div>
 
-        <button id="logoutBtn" class="ghost-btn">
-            Sign out
-        </button>
+    <!-- NOTIFICATION BUTTON -->
+
+    <button
+        id="notificationBell"
+        class="notification-bell"
+        type="button"
+        title="Notifications"
+        aria-label="Notifications"
+    >
+        🔔
+
+        <span
+            id="notificationBadge"
+            class="notification-badge hidden"
+        >
+            0
+        </span>
+    </button>
+
+
+    <!-- USER -->
+
+    <div class="user-meta">
+
+        <strong id="userName">
+            Loading...
+        </strong>
+
+        <span
+            id="roleBadge"
+            class="badge"
+        ></span>
+
     </div>
 
+
+    <!-- LOGOUT -->
+
+    <button
+        id="logoutBtn"
+        class="ghost-btn"
+        type="button"
+    >
+        Sign out
+    </button>
+
+</div>
 </header>
+    <!-- =========================================================
+     NOTIFICATION PANEL
+     ========================================================= -->
+
+<div
+    id="notificationPanel"
+    class="notification-panel hidden"
+>
+
+    <div class="notification-panel-header">
+
+        <div>
+            <strong>Notifications</strong>
+
+            <span
+                id="notificationPanelCount"
+                class="muted"
+            >
+                0 unread
+            </span>
+        </div>
+
+        <button
+            id="markNotificationsRead"
+            type="button"
+            class="ghost-btn"
+        >
+            Mark all read
+        </button>
+
+    </div>
+
+
+    <div
+        id="notificationList"
+        class="notification-list"
+    >
+
+        <div class="notification-empty">
+            No notifications yet.
+        </div>
+
+    </div>
+
+</div>
 
 <main class="dashboard">
 
@@ -796,6 +908,53 @@ main.dashboard {
 
 
 <script src="/static/dashboard.js"></script>
+    <!-- =========================================================
+     PUSH NOTIFICATION PERMISSION
+     ========================================================= -->
+
+<div
+    id="pushPermissionModal"
+    class="push-permission-modal hidden"
+>
+
+    <div class="push-permission-card">
+
+        <div class="push-permission-icon">
+            🔔
+        </div>
+
+        <h3>
+            Enable Task Notifications
+        </h3>
+
+        <p>
+            Get instant notifications when the Tech Head
+            assigns or updates a task.
+        </p>
+
+        <div class="push-permission-actions">
+
+            <button
+                id="enablePushBtn"
+                class="primary-btn"
+                type="button"
+            >
+                Enable Notifications
+            </button>
+
+            <button
+                id="skipPushBtn"
+                class="ghost-btn"
+                type="button"
+            >
+                Not now
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
 
 </body>
 </html>
