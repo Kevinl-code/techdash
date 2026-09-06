@@ -1,3 +1,14 @@
+/* =========================================================
+   TECHNICAL TEAM DASHBOARD
+   CLEAN FRONTEND CONTROLLER
+   ========================================================= */
+
+"use strict";
+
+/* =========================================================
+   GLOBAL STATE
+   ========================================================= */
+
 let me = null;
 let tasks = [];
 let availableMembers = [];
@@ -10,12 +21,11 @@ let pickerDate = new Date();
 let selectedDateValue = null;
 
 
-// =========================================================
-// API
-// =========================================================
+/* =========================================================
+   API
+   ========================================================= */
 
 async function api(url, options = {}) {
-
     const response = await fetch(url, {
         credentials: "same-origin",
         ...options
@@ -26,10 +36,8 @@ async function api(url, options = {}) {
         .catch(() => ({}));
 
     if (!response.ok) {
-
         throw new Error(
-            data.error ||
-            "Request failed"
+            data.error || "Request failed"
         );
     }
 
@@ -37,12 +45,11 @@ async function api(url, options = {}) {
 }
 
 
-// =========================================================
-// HTML ESCAPE
-// =========================================================
+/* =========================================================
+   HTML ESCAPE
+   ========================================================= */
 
 function escapeHtml(value = "") {
-
     return String(value)
         .replaceAll("&", "&amp;")
         .replaceAll("<", "&lt;")
@@ -52,12 +59,11 @@ function escapeHtml(value = "") {
 }
 
 
-// =========================================================
-// DATE HELPERS
-// =========================================================
+/* =========================================================
+   DATE HELPERS
+   ========================================================= */
 
 function formatDateTime(value) {
-
     if (!value) {
         return "—";
     }
@@ -83,26 +89,20 @@ function formatDateTime(value) {
 
 
 function formatDateOnly(value) {
-
     if (!value) {
         return "No due date";
     }
 
     /*
-     * For YYYY-MM-DD, avoid timezone
-     * shifting by parsing manually.
-     */
+       Prevent timezone shifting for YYYY-MM-DD
+    */
 
     if (
         typeof value === "string" &&
         /^\d{4}-\d{2}-\d{2}$/.test(value)
     ) {
-
-        const [
-            year,
-            month,
-            day
-        ] = value.split("-").map(Number);
+        const [year, month, day] =
+            value.split("-").map(Number);
 
         const date = new Date(
             year,
@@ -138,7 +138,6 @@ function formatDateOnly(value) {
 
 
 function relativeTime(value) {
-
     if (!value) {
         return "";
     }
@@ -150,8 +149,7 @@ function relativeTime(value) {
     }
 
     const diff =
-        Date.now() -
-        date.getTime();
+        Date.now() - date.getTime();
 
     const seconds =
         Math.floor(diff / 1000);
@@ -189,17 +187,14 @@ function relativeTime(value) {
 }
 
 
-// =========================================================
-// STATUS
-// =========================================================
+/* =========================================================
+   STATUS
+   ========================================================= */
 
 function getStatusClass(status) {
-
     switch (
-        String(status || "")
-            .toLowerCase()
+        String(status || "").toLowerCase()
     ) {
-
         case "completed":
             return "completed";
 
@@ -212,108 +207,70 @@ function getStatusClass(status) {
 }
 
 
-// =========================================================
-// INITIALIZATION
-// =========================================================
+/* =========================================================
+   INITIALIZATION
+   ========================================================= */
 
 async function init() {
+    console.log("Dashboard initialization started.");
 
     try {
-
         me = await api("/api/me");
 
-    } catch (error) {
+        console.log(
+            "Authenticated user:",
+            me
+        );
 
+    } catch (error) {
         console.error(
             "Authentication check failed:",
             error
         );
 
-        location.href = "/";
-
+        window.location.href = "/";
         return;
     }
 
+
+    /* -----------------------------------------------------
+       USER INFORMATION
+       ----------------------------------------------------- */
+
     const userName =
-        document.getElementById(
-            "userName"
-        );
+        document.getElementById("userName");
 
     const roleBadge =
-        document.getElementById(
-            "roleBadge"
-        );
+        document.getElementById("roleBadge");
+
 
     if (userName) {
         userName.textContent =
             me.name || "";
     }
 
-    if (roleBadge) {
 
+    if (roleBadge) {
         roleBadge.textContent =
             me.role === "head"
                 ? "HEAD"
                 : (
-                    me.team_member_id
-                    || "MEMBER"
+                    me.team_member_id ||
+                    "MEMBER"
                 );
     }
 
 
-    // =====================================================
-    // RESOURCES
-    // =====================================================
+    /* -----------------------------------------------------
+       LOAD GLOBAL RESOURCES
+       ----------------------------------------------------- */
 
-    try {
-
-        const resources =
-            await api(
-                "/api/resources"
-            );
-
-        const waCard =
-            document.getElementById(
-                "waCard"
-            );
-
-        const canvaCard =
-            document.getElementById(
-                "canvaCard"
-            );
-
-        const folderCard =
-            document.getElementById(
-                "folderCard"
-            );
-
-        if (waCard) {
-            waCard.href =
-                resources.whatsapp || "#";
-        }
-
-        if (canvaCard) {
-            canvaCard.href =
-                resources.canva || "#";
-        }
-
-        if (folderCard) {
-            folderCard.href =
-                resources.folder || "#";
-        }
-
-    } catch (error) {
-
-        console.error(
-            "Failed to load resources:",
-            error
-        );
-    }
+    await loadGlobalResources();
 
 
-    // =====================================================
-    // HEAD ONLY
-    // =====================================================
+    /* -----------------------------------------------------
+       HEAD ONLY
+       ----------------------------------------------------- */
 
     if (me.role === "head") {
 
@@ -329,6 +286,7 @@ async function init() {
             .getElementById("auditPanel")
             ?.classList.remove("hidden");
 
+
         await loadMembers();
 
         await loadTaskMembers();
@@ -337,19 +295,75 @@ async function init() {
     }
 
 
-    // =====================================================
-    // TASKS
-    // =====================================================
+    /* -----------------------------------------------------
+       TASKS
+       ----------------------------------------------------- */
 
     await loadTasks();
 
+
+    /* -----------------------------------------------------
+       DATE PICKER
+       ----------------------------------------------------- */
+
     renderDatePicker();
+
+    console.log(
+        "Dashboard initialization completed."
+    );
 }
 
 
-// =========================================================
-// CALENDAR
-// =========================================================
+/* =========================================================
+   GLOBAL RESOURCES
+   ========================================================= */
+
+async function loadGlobalResources() {
+    try {
+
+        const resources =
+            await api("/api/resources");
+
+        const waCard =
+            document.getElementById("waCard");
+
+        const canvaCard =
+            document.getElementById("canvaCard");
+
+        const folderCard =
+            document.getElementById("folderCard");
+
+
+        if (waCard) {
+            waCard.href =
+                resources.whatsapp || "#";
+        }
+
+
+        if (canvaCard) {
+            canvaCard.href =
+                resources.canva || "#";
+        }
+
+
+        if (folderCard) {
+            folderCard.href =
+                resources.folder || "#";
+        }
+
+    } catch (error) {
+
+        console.error(
+            "Failed to load global resources:",
+            error
+        );
+    }
+}
+
+
+/* =========================================================
+   CALENDAR
+   ========================================================= */
 
 function renderCalendar() {
 
@@ -363,15 +377,18 @@ function renderCalendar() {
             "calendarMonth"
         );
 
+
     if (!grid || !monthLabel) {
         return;
     }
+
 
     const year =
         currentCalendarDate.getFullYear();
 
     const month =
         currentCalendarDate.getMonth();
+
 
     monthLabel.textContent =
         new Intl.DateTimeFormat(
@@ -384,7 +401,9 @@ function renderCalendar() {
             currentCalendarDate
         );
 
+
     grid.innerHTML = "";
+
 
     const firstDay =
         new Date(
@@ -393,12 +412,14 @@ function renderCalendar() {
             1
         ).getDay();
 
+
     const daysInMonth =
         new Date(
             year,
             month + 1,
             0
         ).getDate();
+
 
     const previousMonthDays =
         new Date(
@@ -408,9 +429,9 @@ function renderCalendar() {
         ).getDate();
 
 
-    // -----------------------------------------------------
-    // PREVIOUS MONTH
-    // -----------------------------------------------------
+    /* -----------------------------------------------------
+       PREVIOUS MONTH
+       ----------------------------------------------------- */
 
     for (
         let i = firstDay;
@@ -418,29 +439,28 @@ function renderCalendar() {
         i--
     ) {
 
-        const day =
-            document.createElement(
-                "div"
-            );
+        const cell =
+            document.createElement("div");
 
-        day.className =
+        cell.className =
             "calendar-day other-month";
 
-        day.innerHTML = `
+        cell.innerHTML = `
             <span class="day-number">
                 ${previousMonthDays - i + 1}
             </span>
         `;
 
-        grid.appendChild(day);
+        grid.appendChild(cell);
     }
 
 
-    // -----------------------------------------------------
-    // CURRENT MONTH
-    // -----------------------------------------------------
+    /* -----------------------------------------------------
+       CURRENT MONTH
+       ----------------------------------------------------- */
 
     const today = new Date();
+
 
     for (
         let dayNumber = 1;
@@ -449,12 +469,11 @@ function renderCalendar() {
     ) {
 
         const cell =
-            document.createElement(
-                "div"
-            );
+            document.createElement("div");
 
         cell.className =
             "calendar-day";
+
 
         const cellDate =
             new Date(
@@ -486,9 +505,9 @@ function renderCalendar() {
         `;
 
 
-        // -------------------------------------------------
-        // TASKS ON DATE
-        // -------------------------------------------------
+        /* -------------------------------------------------
+           TASKS ON THIS DATE
+           ------------------------------------------------- */
 
         const dayTasks =
             tasks.filter(task => {
@@ -506,32 +525,34 @@ function renderCalendar() {
                         .test(task.due_date)
                 ) {
 
-                    const [
-                        y,
-                        m,
-                        d
-                    ] =
+                    const [y, m, d] =
                         task.due_date
                             .split("-")
                             .map(Number);
 
-                    due = new Date(
-                        y,
-                        m - 1,
-                        d
-                    );
+                    due =
+                        new Date(
+                            y,
+                            m - 1,
+                            d
+                        );
 
                 } else {
 
-                    due = new Date(
-                        task.due_date
-                    );
+                    due =
+                        new Date(
+                            task.due_date
+                        );
                 }
 
+
                 return (
-                    due.getFullYear() === year &&
-                    due.getMonth() === month &&
-                    due.getDate() === dayNumber
+                    due.getFullYear() ===
+                        year &&
+                    due.getMonth() ===
+                        month &&
+                    due.getDate() ===
+                        dayNumber
                 );
             });
 
@@ -549,17 +570,14 @@ function renderCalendar() {
                     );
 
                 taskElement.className =
-                    `calendar-task ${
-                        getStatusClass(
-                            task.status
-                        )
-                    }`;
+                    `calendar-task ${getStatusClass(task.status)}`;
 
                 taskElement.textContent =
                     task.title;
 
                 taskElement.title =
                     `${task.title} — ${task.status}`;
+
 
                 taskElement.addEventListener(
                     "click",
@@ -570,6 +588,7 @@ function renderCalendar() {
                         openTaskModal(task);
                     }
                 );
+
 
                 cell.appendChild(
                     taskElement
@@ -596,23 +615,24 @@ function renderCalendar() {
             cell.appendChild(more);
         }
 
+
         grid.appendChild(cell);
     }
 
 
-    // -----------------------------------------------------
-    // NEXT MONTH PADDING
-    // -----------------------------------------------------
+    /* -----------------------------------------------------
+       NEXT MONTH
+       ----------------------------------------------------- */
 
     const totalCells =
-        firstDay +
-        daysInMonth;
+        firstDay + daysInMonth;
 
     const remaining =
         (
             7 -
             (totalCells % 7)
         ) % 7;
+
 
     for (
         let i = 1;
@@ -621,9 +641,7 @@ function renderCalendar() {
     ) {
 
         const cell =
-            document.createElement(
-                "div"
-            );
+            document.createElement("div");
 
         cell.className =
             "calendar-day other-month";
@@ -639,9 +657,9 @@ function renderCalendar() {
 }
 
 
-// =========================================================
-// CALENDAR CONTROLS
-// =========================================================
+/* =========================================================
+   CALENDAR CONTROLS
+   ========================================================= */
 
 document
     .getElementById("prevMonth")
@@ -649,11 +667,9 @@ document
         "click",
         () => {
 
-            currentCalendarDate
-                .setMonth(
-                    currentCalendarDate
-                        .getMonth() - 1
-                );
+            currentCalendarDate.setMonth(
+                currentCalendarDate.getMonth() - 1
+            );
 
             renderCalendar();
         }
@@ -666,11 +682,9 @@ document
         "click",
         () => {
 
-            currentCalendarDate
-                .setMonth(
-                    currentCalendarDate
-                        .getMonth() + 1
-                );
+            currentCalendarDate.setMonth(
+                currentCalendarDate.getMonth() + 1
+            );
 
             renderCalendar();
         }
@@ -691,9 +705,9 @@ document
     );
 
 
-// =========================================================
-// TASK ASSIGNEE DISPLAY
-// =========================================================
+/* =========================================================
+   TASK MEMBERS
+   ========================================================= */
 
 function getTaskMembers(task) {
 
@@ -702,18 +716,18 @@ function getTaskMembers(task) {
             task.assigned_members
         )
     ) {
-
         return task.assigned_members;
     }
+
 
     if (
         Array.isArray(
             task.assignments
         )
     ) {
-
         return task.assignments;
     }
+
 
     return [];
 }
@@ -724,9 +738,11 @@ function renderAssigneeNames(task) {
     const members =
         getTaskMembers(task);
 
+
     if (!members.length) {
         return "No members";
     }
+
 
     const names =
         members.map(
@@ -736,249 +752,30 @@ function renderAssigneeNames(task) {
                 "Member"
         );
 
+
     if (names.length <= 2) {
         return names.join(", ");
     }
 
-    return `${names[0]}, ${names[1]} +${
-        names.length - 2
-    } more`;
+
+    return `${names[0]}, ${names[1]} +${names.length - 2} more`;
 }
 
 
-// =========================================================
-// TASK MODAL
-// =========================================================
-
-function openTaskModal(task) {
-
-    const titleEl =
-        document.getElementById(
-            "modalTaskTitle"
-        );
-
-    const descEl =
-        document.getElementById(
-            "modalTaskDescription"
-        );
-
-    const statusEl =
-        document.getElementById(
-            "modalTaskStatus"
-        );
-
-    const assigneeEl =
-        document.getElementById(
-            "modalTaskAssignee"
-        );
-
-    const dueEl =
-        document.getElementById(
-            "modalTaskDueDate"
-        );
-
-
-    if (titleEl) {
-
-        titleEl.textContent =
-            task.title ||
-            "Untitled task";
-    }
-
-
-    if (descEl) {
-
-        descEl.textContent =
-            task.description ||
-            "No description available.";
-    }
-
-
-    if (statusEl) {
-
-        statusEl.textContent =
-            task.status ||
-            "Assigned";
-    }
-
-
-    if (assigneeEl) {
-
-        const members =
-            getTaskMembers(task);
-
-        if (!members.length) {
-
-            assigneeEl.textContent =
-                "—";
-
-        } else {
-
-            assigneeEl.innerHTML =
-                members
-                    .map(member => `
-                        <div>
-                            <strong>
-                                ${escapeHtml(
-                                    member.member_name ||
-                                    member.name ||
-                                    "Member"
-                                )}
-                            </strong>
-
-                            ${
-                                member.member_email
-                                    ? `
-                                    <small>
-                                        ${escapeHtml(
-                                            member.member_email
-                                        )}
-                                    </small>
-                                    `
-                                    : ""
-                            }
-                        </div>
-                    `)
-                    .join("");
-        }
-    }
-
-
-    if (dueEl) {
-
-        dueEl.textContent =
-            formatDateOnly(
-                task.due_date
-            );
-    }
-
-
-    document
-        .getElementById(
-            "taskModal"
-        )
-        ?.classList.remove(
-            "hidden"
-        );
-}
-
-
-// =========================================================
-// CLOSE MODAL
-// =========================================================
-
-document
-    .getElementById("closeTaskModal")
-    ?.addEventListener(
-        "click",
-        () => {
-
-            document
-                .getElementById(
-                    "taskModal"
-                )
-                ?.classList.add(
-                    "hidden"
-                );
-        }
-    );
-
-const resourcesEl =
-    document.getElementById(
-        "modalTaskResources"
-    );
-
-if (resourcesEl) {
-
-    const resourceButtons = [];
-
-    if (task.canva_url) {
-
-        resourceButtons.push(`
-            <a
-                href="${escapeHtml(task.canva_url)}"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="task-resource-btn"
-            >
-                🎨 Open Canva Design ↗
-            </a>
-        `);
-    }
-
-    if (task.assets_folder_url) {
-
-        resourceButtons.push(`
-            <a
-                href="${escapeHtml(task.assets_folder_url)}"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="task-resource-btn"
-            >
-                📁 Open Asset Folder ↗
-            </a>
-        `);
-    }
-
-    if (task.reference_url) {
-
-        resourceButtons.push(`
-            <a
-                href="${escapeHtml(task.reference_url)}"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="task-resource-btn"
-            >
-                🔗 Open Reference ↗
-            </a>
-        `);
-    }
-
-    resourcesEl.innerHTML =
-        resourceButtons.length
-            ? `
-                <p class="eyebrow">
-                    TASK RESOURCES
-                </p>
-
-                <div class="modal-resource-list">
-                    ${resourceButtons.join("")}
-                </div>
-              `
-            : "";
-}
-document
-    .getElementById("taskModal")
-    ?.addEventListener(
-        "click",
-        event => {
-
-            if (
-                event.target.id ===
-                "taskModal"
-            ) {
-
-                event.currentTarget
-                    .classList.add(
-                        "hidden"
-                    );
-            }
-        }
-    );
-
-
-// =========================================================
-// LOAD TASKS
-// =========================================================
+/* =========================================================
+   LOAD TASKS
+   ========================================================= */
 
 async function loadTasks() {
 
     try {
 
         tasks =
-            await api(
-                "/api/tasks"
-            );
+            await api("/api/tasks");
+
+        if (!Array.isArray(tasks)) {
+            tasks = [];
+        }
 
         renderTasks();
 
@@ -992,9 +789,9 @@ async function loadTasks() {
 }
 
 
-// =========================================================
-// RENDER TASKS
-// =========================================================
+/* =========================================================
+   RENDER TASKS
+   ========================================================= */
 
 function renderTasks() {
 
@@ -1015,20 +812,14 @@ function renderTasks() {
 
 
     if (count) {
-
         count.textContent =
             tasks.length;
     }
 
 
     if (summary) {
-
         summary.textContent =
-            `${tasks.length} task${
-                tasks.length === 1
-                    ? ""
-                    : "s"
-            }`;
+            `${tasks.length} task${tasks.length === 1 ? "" : "s"}`;
     }
 
 
@@ -1083,7 +874,6 @@ function renderTasks() {
 
 
         card.innerHTML = `
-
             <div class="task-card-head">
 
                 <h3>
@@ -1094,9 +884,7 @@ function renderTasks() {
                 </h3>
 
                 <span class="badge">
-                    ${escapeHtml(
-                        status
-                    )}
+                    ${escapeHtml(status)}
                 </span>
 
             </div>
@@ -1133,70 +921,70 @@ function renderTasks() {
                                         : "members"
                                 }
                             </span>
-                          `
+                        `
                         : ""
                 }
 
             </div>
+
+
             <div class="task-resources">
 
-    ${
-        task.canva_url
-            ? `
-                <a
-                    class="task-resource-btn canva-resource"
-                    href="${escapeHtml(task.canva_url)}"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onclick="event.stopPropagation()"
-                >
-                    🎨
-                    <span>Open Canva</span>
-                    ↗
-                </a>
-            `
-            : ""
-    }
+                ${
+                    task.canva_url
+                        ? `
+                            <a
+                                class="task-resource-btn canva-resource"
+                                href="${escapeHtml(task.canva_url)}"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                🎨
+                                <span>Open Canva</span>
+                                ↗
+                            </a>
+                        `
+                        : ""
+                }
 
 
-    ${
-        task.assets_folder_url
-            ? `
-                <a
-                    class="task-resource-btn folder-resource"
-                    href="${escapeHtml(task.assets_folder_url)}"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onclick="event.stopPropagation()"
-                >
-                    📁
-                    <span>Open Assets</span>
-                    ↗
-                </a>
-            `
-            : ""
-    }
+                ${
+                    task.assets_folder_url
+                        ? `
+                            <a
+                                class="task-resource-btn folder-resource"
+                                href="${escapeHtml(task.assets_folder_url)}"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                📁
+                                <span>Open Assets</span>
+                                ↗
+                            </a>
+                        `
+                        : ""
+                }
 
 
-    ${
-        task.reference_url
-            ? `
-                <a
-                    class="task-resource-btn reference-resource"
-                    href="${escapeHtml(task.reference_url)}"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onclick="event.stopPropagation()"
-                >
-                    🔗
-                    <span>Reference</span>
-                    ↗
-                </a>
-            `
-            : ""
-    }
+                ${
+                    task.reference_url
+                        ? `
+                            <a
+                                class="task-resource-btn reference-resource"
+                                href="${escapeHtml(task.reference_url)}"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                🔗
+                                <span>Reference</span>
+                                ↗
+                            </a>
+                        `
+                        : ""
+                }
 
-</div>
+            </div>
+
 
             <div class="task-meta">
 
@@ -1209,42 +997,26 @@ function renderTasks() {
                     )}
                 </span>
 
-                <select
-                    class="status-select"
-                >
+
+                <select class="status-select">
 
                     <option
                         value="Assigned"
-                        ${
-                            status ===
-                            "Assigned"
-                                ? "selected"
-                                : ""
-                        }
+                        ${status === "Assigned" ? "selected" : ""}
                     >
                         Assigned
                     </option>
 
                     <option
                         value="In Progress"
-                        ${
-                            status ===
-                            "In Progress"
-                                ? "selected"
-                                : ""
-                        }
+                        ${status === "In Progress" ? "selected" : ""}
                     >
                         In Progress
                     </option>
 
                     <option
                         value="Completed"
-                        ${
-                            status ===
-                            "Completed"
-                                ? "selected"
-                                : ""
-                        }
+                        ${status === "Completed" ? "selected" : ""}
                     >
                         Completed
                     </option>
@@ -1255,78 +1027,112 @@ function renderTasks() {
         `;
 
 
+        /* -------------------------------------------------
+           RESOURCE LINKS MUST NOT OPEN TASK MODAL
+           ------------------------------------------------- */
+
+        card
+            .querySelectorAll(
+                ".task-resource-btn"
+            )
+            .forEach(link => {
+
+                link.addEventListener(
+                    "click",
+                    event => {
+                        event.stopPropagation();
+                    }
+                );
+            });
+
+
+        /* -------------------------------------------------
+           STATUS
+           ------------------------------------------------- */
+
         const select =
             card.querySelector(
                 ".status-select"
             );
 
 
-        select.addEventListener(
-            "change",
-            async event => {
+        if (select) {
 
-                event.stopPropagation();
+            select.addEventListener(
+                "change",
+                async event => {
 
-                const newStatus =
-                    select.value;
+                    event.stopPropagation();
 
-                try {
+                    const newStatus =
+                        select.value;
 
-                    await api(
-                        `/api/tasks/${task.id}`,
-                        {
-                            method: "PATCH",
 
-                            headers: {
-                                "Content-Type":
-                                    "application/json"
-                            },
+                    try {
 
-                            body:
-                                JSON.stringify({
-                                    status:
-                                        newStatus
-                                })
+                        await api(
+                            `/api/tasks/${task.id}`,
+                            {
+                                method: "PATCH",
+
+                                headers: {
+                                    "Content-Type":
+                                        "application/json"
+                                },
+
+                                body:
+                                    JSON.stringify({
+                                        status:
+                                            newStatus
+                                    })
+                            }
+                        );
+
+
+                        await loadTasks();
+
+
+                        if (
+                            me?.role ===
+                            "head"
+                        ) {
+                            await loadAudit();
                         }
-                    );
 
-                    await loadTasks();
+                    } catch (error) {
 
-                    if (
-                        me?.role ===
-                        "head"
-                    ) {
+                        alert(
+                            error.message
+                        );
 
-                        await loadAudit();
+                        select.value =
+                            task.status ||
+                            "Assigned";
                     }
-
-                } catch (error) {
-
-                    alert(
-                        error.message
-                    );
-
-                    select.value =
-                        task.status ||
-                        "Assigned";
                 }
-            }
-        );
+            );
+        }
 
+
+        /* -------------------------------------------------
+           CARD CLICK
+           ------------------------------------------------- */
 
         card.addEventListener(
             "click",
             event => {
 
                 if (
-                    event.target.tagName ===
-                        "SELECT" ||
-                    event.target.tagName ===
-                        "OPTION"
+                    event.target.closest(
+                        ".status-select"
+                    ) ||
+                    event.target.closest(
+                        ".task-resource-btn"
+                    )
                 ) {
-
                     return;
                 }
+
 
                 openTaskModal(task);
             }
@@ -1341,32 +1147,304 @@ function renderTasks() {
 }
 
 
-// =========================================================
-// MEMBERS
-// =========================================================
+/* =========================================================
+   TASK MODAL
+   ========================================================= */
+
+function openTaskModal(task) {
+
+    const modal =
+        document.getElementById(
+            "taskModal"
+        );
+
+    const titleEl =
+        document.getElementById(
+            "modalTaskTitle"
+        );
+
+    const descEl =
+        document.getElementById(
+            "modalTaskDescription"
+        );
+
+    const statusEl =
+        document.getElementById(
+            "modalTaskStatus"
+        );
+
+    const assigneeEl =
+        document.getElementById(
+            "modalTaskAssignee"
+        );
+
+    const dueEl =
+        document.getElementById(
+            "modalTaskDueDate"
+        );
+
+    const resourcesEl =
+        document.getElementById(
+            "modalTaskResources"
+        );
+
+
+    /* -----------------------------------------------------
+       BASIC INFORMATION
+       ----------------------------------------------------- */
+
+    if (titleEl) {
+        titleEl.textContent =
+            task.title ||
+            "Untitled task";
+    }
+
+
+    if (descEl) {
+        descEl.textContent =
+            task.description ||
+            "No description available.";
+    }
+
+
+    if (statusEl) {
+        statusEl.textContent =
+            task.status ||
+            "Assigned";
+    }
+
+
+    if (dueEl) {
+        dueEl.textContent =
+            formatDateOnly(
+                task.due_date
+            );
+    }
+
+
+    /* -----------------------------------------------------
+       ASSIGNEES
+       ----------------------------------------------------- */
+
+    if (assigneeEl) {
+
+        const members =
+            getTaskMembers(task);
+
+
+        if (!members.length) {
+
+            assigneeEl.textContent =
+                "—";
+
+        } else {
+
+            assigneeEl.innerHTML =
+                members
+                    .map(member => {
+
+                        const name =
+                            member.member_name ||
+                            member.name ||
+                            "Member";
+
+                        const email =
+                            member.member_email ||
+                            member.email ||
+                            "";
+
+
+                        return `
+                            <div>
+                                <strong>
+                                    ${escapeHtml(name)}
+                                </strong>
+
+                                ${
+                                    email
+                                        ? `
+                                            <small>
+                                                ${escapeHtml(email)}
+                                            </small>
+                                        `
+                                        : ""
+                                }
+                            </div>
+                        `;
+                    })
+                    .join("");
+        }
+    }
+
+
+    /* -----------------------------------------------------
+       TASK RESOURCES
+       ----------------------------------------------------- */
+
+    if (resourcesEl) {
+
+        const resourceButtons = [];
+
+
+        if (task.canva_url) {
+
+            resourceButtons.push(`
+                <a
+                    href="${escapeHtml(task.canva_url)}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="task-resource-btn canva-resource"
+                >
+                    🎨 Open Canva Design ↗
+                </a>
+            `);
+        }
+
+
+        if (task.assets_folder_url) {
+
+            resourceButtons.push(`
+                <a
+                    href="${escapeHtml(task.assets_folder_url)}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="task-resource-btn folder-resource"
+                >
+                    📁 Open Asset Folder ↗
+                </a>
+            `);
+        }
+
+
+        if (task.reference_url) {
+
+            resourceButtons.push(`
+                <a
+                    href="${escapeHtml(task.reference_url)}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="task-resource-btn reference-resource"
+                >
+                    🔗 Open Reference ↗
+                </a>
+            `);
+        }
+
+
+        resourcesEl.innerHTML =
+            resourceButtons.length
+                ? `
+                    <p class="eyebrow">
+                        TASK RESOURCES
+                    </p>
+
+                    <div class="modal-resource-list">
+                        ${resourceButtons.join("")}
+                    </div>
+                `
+                : "";
+    }
+
+
+    /* -----------------------------------------------------
+       OPEN
+       ----------------------------------------------------- */
+
+    if (modal) {
+        modal.classList.remove(
+            "hidden"
+        );
+    }
+}
+
+
+/* =========================================================
+   CLOSE TASK MODAL
+   ========================================================= */
+
+document
+    .getElementById("closeTaskModal")
+    ?.addEventListener(
+        "click",
+        () => {
+
+            document
+                .getElementById("taskModal")
+                ?.classList.add(
+                    "hidden"
+                );
+        }
+    );
+
+
+document
+    .getElementById("taskModal")
+    ?.addEventListener(
+        "click",
+        event => {
+
+            if (
+                event.target.id ===
+                "taskModal"
+            ) {
+
+                event.currentTarget
+                    .classList.add(
+                        "hidden"
+                    );
+            }
+        }
+    );
+
+
+/* =========================================================
+   MEMBERS MANAGEMENT
+   ========================================================= */
 
 async function loadMembers() {
 
     try {
 
         const data =
-            await api(
-                "/api/members"
-            );
+            await api("/api/members");
+
 
         const memberList =
             document.getElementById(
                 "memberList"
             );
 
+
         if (!memberList) {
             return;
         }
 
+
         memberList.innerHTML = "";
 
 
-        data.forEach(member => {
+        const members =
+            Array.isArray(data)
+                ? data
+                : (
+                    data.members ||
+                    []
+                );
+
+
+        if (!members.length) {
+
+            memberList.innerHTML = `
+                <div class="audit-empty">
+                    No team members found.
+                </div>
+            `;
+
+            return;
+        }
+
+
+        members.forEach(member => {
 
             const row =
                 document.createElement(
@@ -1378,7 +1456,6 @@ async function loadMembers() {
 
 
             row.innerHTML = `
-
                 <div>
 
                     <strong>
@@ -1414,7 +1491,6 @@ async function loadMembers() {
                             : "Enable"
                     }
                 </button>
-
             `;
 
 
@@ -1424,7 +1500,7 @@ async function loadMembers() {
                 );
 
 
-            button.addEventListener(
+            button?.addEventListener(
                 "click",
                 () => {
 
@@ -1436,9 +1512,7 @@ async function loadMembers() {
             );
 
 
-            memberList.appendChild(
-                row
-            );
+            memberList.appendChild(row);
         });
 
     } catch (error) {
@@ -1451,9 +1525,9 @@ async function loadMembers() {
 }
 
 
-// =========================================================
-// TOGGLE MEMBER
-// =========================================================
+/* =========================================================
+   TOGGLE MEMBER
+   ========================================================= */
 
 async function toggleMember(
     id,
@@ -1479,6 +1553,7 @@ async function toggleMember(
             }
         );
 
+
         await loadMembers();
 
         await loadTaskMembers();
@@ -1494,9 +1569,9 @@ async function toggleMember(
 }
 
 
-// =========================================================
-// TASK MEMBER SELECTOR
-// =========================================================
+/* =========================================================
+   TASK MEMBER SELECTOR
+   ========================================================= */
 
 async function loadTaskMembers() {
 
@@ -1505,17 +1580,24 @@ async function loadTaskMembers() {
             "memberCheckboxList"
         );
 
+
     if (!list) {
         return;
     }
 
 
+    list.innerHTML = `
+        <div class="member-loading">
+            Loading team members...
+        </div>
+    `;
+
+
     try {
 
         const data =
-            await api(
-                "/api/members"
-            );
+            await api("/api/members");
+
 
         availableMembers =
             Array.isArray(data)
@@ -1524,6 +1606,7 @@ async function loadTaskMembers() {
                     data.members ||
                     []
                 );
+
 
         renderTaskMembers();
 
@@ -1534,6 +1617,7 @@ async function loadTaskMembers() {
             error
         );
 
+
         list.innerHTML = `
             <div class="member-loading">
                 Unable to load team members.
@@ -1543,9 +1627,9 @@ async function loadTaskMembers() {
 }
 
 
-// =========================================================
-// RENDER TASK MEMBERS
-// =========================================================
+/* =========================================================
+   RENDER TASK MEMBERS
+   ========================================================= */
 
 function renderTaskMembers() {
 
@@ -1553,6 +1637,7 @@ function renderTaskMembers() {
         document.getElementById(
             "memberCheckboxList"
         );
+
 
     if (!list) {
         return;
@@ -1583,93 +1668,73 @@ function renderTaskMembers() {
     list.innerHTML = "";
 
 
-    activeMembers.forEach(
-        member => {
+    activeMembers.forEach(member => {
 
-            const wrapper =
-                document.createElement(
-                    "label"
-                );
+        const wrapper =
+            document.createElement(
+                "label"
+            );
 
-            wrapper.className =
-                "member-checkbox";
+        wrapper.className =
+            "member-checkbox";
 
 
-            wrapper.innerHTML = `
+        wrapper.innerHTML = `
+            <input
+                type="checkbox"
+                class="member-select"
+                value="${escapeHtml(member.id)}"
+                data-team-id="${escapeHtml(member.team_member_id)}"
+            >
 
-                <input
-                    type="checkbox"
-                    class="member-select"
-                    value="${escapeHtml(
-                        member.id
-                    )}"
-                    data-team-id="${escapeHtml(
-                        member.team_member_id
-                    )}"
-                >
+            <div class="member-checkbox-info">
 
-                <div
-                    class="member-checkbox-info"
-                >
-
-                    <span
-                        class="member-checkbox-name"
-                    >
-                        ${escapeHtml(
-                            member.name
-                        )}
-                    </span>
-
-                    <span
-                        class="member-checkbox-id"
-                    >
-                        ${escapeHtml(
-                            member.team_member_id
-                        )}
-                    </span>
-
-                </div>
-
-                <span
-                    class="member-checkbox-email"
-                >
+                <span class="member-checkbox-name">
                     ${escapeHtml(
-                        member.email
+                        member.name
                     )}
                 </span>
 
-            `;
+                <span class="member-checkbox-id">
+                    ${escapeHtml(
+                        member.team_member_id
+                    )}
+                </span>
+
+            </div>
+
+            <span class="member-checkbox-email">
+                ${escapeHtml(
+                    member.email
+                )}
+            </span>
+        `;
 
 
-            list.appendChild(
-                wrapper
-            );
-        }
-    );
+        list.appendChild(wrapper);
+    });
 
 
-    document
+    list
         .querySelectorAll(
             ".member-select"
         )
-        .forEach(
-            checkbox => {
+        .forEach(checkbox => {
 
-                checkbox.addEventListener(
-                    "change",
-                    updateSelectedMemberCount
-                );
-            }
-        );
+            checkbox.addEventListener(
+                "change",
+                updateSelectedMemberCount
+            );
+        });
 
 
     updateSelectedMemberCount();
 }
 
 
-// =========================================================
-// SELECTED MEMBER IDS
-// =========================================================
+/* =========================================================
+   SELECTED MEMBER IDS
+   ========================================================= */
 
 function getSelectedMemberIds() {
 
@@ -1684,9 +1749,9 @@ function getSelectedMemberIds() {
 }
 
 
-// =========================================================
-// MEMBER COUNT
-// =========================================================
+/* =========================================================
+   MEMBER COUNT
+   ========================================================= */
 
 function updateSelectedMemberCount() {
 
@@ -1694,6 +1759,7 @@ function updateSelectedMemberCount() {
         document.getElementById(
             "selectedMemberCount"
         );
+
 
     if (!count) {
         return;
@@ -1711,6 +1777,7 @@ function updateSelectedMemberCount() {
                     member.active !== false
             ).length;
 
+
         count.textContent =
             `${activeCount} members`;
 
@@ -1721,14 +1788,15 @@ function updateSelectedMemberCount() {
     const selected =
         getSelectedMemberIds();
 
+
     count.textContent =
         `${selected.length} selected`;
 }
 
 
-// =========================================================
-// ASSIGNMENT MODE
-// =========================================================
+/* =========================================================
+   ASSIGNMENT MODE
+   ========================================================= */
 
 document
     .getElementById(
@@ -1741,9 +1809,11 @@ document
             assignmentMode =
                 "members";
 
+
             this.classList.add(
                 "active"
             );
+
 
             document
                 .getElementById(
@@ -1753,6 +1823,7 @@ document
                     "active"
                 );
 
+
             document
                 .getElementById(
                     "memberSelector"
@@ -1760,6 +1831,7 @@ document
                 ?.classList.remove(
                     "hidden"
                 );
+
 
             updateSelectedMemberCount();
         }
@@ -1777,9 +1849,11 @@ document
             assignmentMode =
                 "all";
 
+
             this.classList.add(
                 "active"
             );
+
 
             document
                 .getElementById(
@@ -1789,6 +1863,7 @@ document
                     "active"
                 );
 
+
             document
                 .getElementById(
                     "memberSelector"
@@ -1797,14 +1872,15 @@ document
                     "hidden"
                 );
 
+
             updateSelectedMemberCount();
         }
     );
 
 
-// =========================================================
-// SELECT ALL
-// =========================================================
+/* =========================================================
+   SELECT ALL
+   ========================================================= */
 
 document
     .getElementById(
@@ -1825,14 +1901,15 @@ document
                     }
                 );
 
+
             updateSelectedMemberCount();
         }
     );
 
 
-// =========================================================
-// CLEAR ALL
-// =========================================================
+/* =========================================================
+   CLEAR ALL
+   ========================================================= */
 
 document
     .getElementById(
@@ -1853,14 +1930,15 @@ document
                     }
                 );
 
+
             updateSelectedMemberCount();
         }
     );
 
 
-// =========================================================
-// CREATE TASK
-// =========================================================
+/* =========================================================
+   CREATE TASK
+   ========================================================= */
 
 document
     .getElementById(
@@ -1872,6 +1950,10 @@ document
 
             event.preventDefault();
 
+
+            /* -------------------------------------------------
+               ASSIGNEES
+               ------------------------------------------------- */
 
             let assignedTo = [];
 
@@ -1885,8 +1967,7 @@ document
                     availableMembers
                         .filter(
                             member =>
-                                member.active !==
-                                false
+                                member.active !== false
                         )
                         .map(
                             member =>
@@ -1900,10 +1981,6 @@ document
             }
 
 
-            // -------------------------------------------------
-            // VALIDATE ASSIGNEES
-            // -------------------------------------------------
-
             if (!assignedTo.length) {
 
                 alert(
@@ -1914,22 +1991,64 @@ document
             }
 
 
+            /* -------------------------------------------------
+               FORM VALUES
+               IMPORTANT:
+               Read resource URLs HERE,
+               not globally.
+               ------------------------------------------------- */
+
             const title =
-                document.getElementById(
-                    "taskTitle"
-                )?.value.trim() || "";
+                document
+                    .getElementById(
+                        "taskTitle"
+                    )
+                    ?.value
+                    .trim() || "";
 
 
             const description =
-                document.getElementById(
-                    "taskDescription"
-                )?.value.trim() || "";
+                document
+                    .getElementById(
+                        "taskDescription"
+                    )
+                    ?.value
+                    .trim() || "";
 
 
             const dueDate =
-                document.getElementById(
-                    "dueDate"
-                )?.value || "";
+                document
+                    .getElementById(
+                        "dueDate"
+                    )
+                    ?.value || "";
+
+
+            const canvaUrl =
+                document
+                    .getElementById(
+                        "taskCanvaUrl"
+                    )
+                    ?.value
+                    .trim() || "";
+
+
+            const assetsFolderUrl =
+                document
+                    .getElementById(
+                        "taskAssetsFolderUrl"
+                    )
+                    ?.value
+                    .trim() || "";
+
+
+            const referenceUrl =
+                document
+                    .getElementById(
+                        "taskReferenceUrl"
+                    )
+                    ?.value
+                    .trim() || "";
 
 
             if (!title) {
@@ -1942,14 +2061,15 @@ document
             }
 
 
-            // -------------------------------------------------
-            // DISABLE BUTTON
-            // -------------------------------------------------
+            /* -------------------------------------------------
+               SUBMIT BUTTON
+               ------------------------------------------------- */
 
             const submitButton =
                 event.target.querySelector(
                     'button[type="submit"]'
                 );
+
 
             const originalText =
                 submitButton?.textContent;
@@ -1990,21 +2110,23 @@ document
 
                                     due_date:
                                         dueDate,
+
                                     canva_url:
                                         canvaUrl,
-                            
+
                                     assets_folder_url:
                                         assetsFolderUrl,
-                            
+
                                     reference_url:
                                         referenceUrl
-                                    })
+                                })
+                        }
                     );
 
 
-                // -------------------------------------------------
-                // RESET FORM
-                // -------------------------------------------------
+                /* -------------------------------------------------
+                   RESET FORM
+                   ------------------------------------------------- */
 
                 event.target.reset();
 
@@ -2012,10 +2134,12 @@ document
                 selectedDateValue =
                     null;
 
+
                 const selectedDateLabel =
                     document.getElementById(
                         "selectedDate"
                     );
+
 
                 if (selectedDateLabel) {
 
@@ -2029,8 +2153,8 @@ document
                         "dueDate"
                     );
 
-                if (dueDateInput) {
 
+                if (dueDateInput) {
                     dueDateInput.value =
                         "";
                 }
@@ -2084,13 +2208,19 @@ document
                 renderDatePicker();
 
 
-                // -------------------------------------------------
-                // REFRESH
-                // -------------------------------------------------
+                /* -------------------------------------------------
+                   REFRESH
+                   ------------------------------------------------- */
 
                 await loadTasks();
 
-                await loadAudit();
+
+                if (
+                    me?.role ===
+                    "head"
+                ) {
+                    await loadAudit();
+                }
 
 
                 const assignedCount =
@@ -2114,13 +2244,13 @@ document
                     `${notificationCount}/${assignedCount}.`
                 );
 
-
             } catch (error) {
 
                 console.error(
                     "TASK ASSIGNMENT ERROR:",
                     error
                 );
+
 
                 alert(
                     error.message ||
@@ -2143,9 +2273,9 @@ document
     );
 
 
-// =========================================================
-// MEMBER MANAGEMENT FORM
-// =========================================================
+/* =========================================================
+   MEMBER CREATION
+   ========================================================= */
 
 document
     .getElementById(
@@ -2207,6 +2337,7 @@ document
 
                 event.target.reset();
 
+
                 await loadMembers();
 
                 await loadTaskMembers();
@@ -2218,7 +2349,6 @@ document
                     "Team member added successfully."
                 );
 
-
             } catch (error) {
 
                 alert(
@@ -2229,9 +2359,9 @@ document
     );
 
 
-// =========================================================
-// LOGOUT
-// =========================================================
+/* =========================================================
+   LOGOUT
+   ========================================================= */
 
 document
     .getElementById(
@@ -2240,6 +2370,18 @@ document
     ?.addEventListener(
         "click",
         async () => {
+
+            const button =
+                document.getElementById(
+                    "logoutBtn"
+                );
+
+
+            if (button) {
+                button.disabled =
+                    true;
+            }
+
 
             try {
 
@@ -2259,15 +2401,22 @@ document
 
             } finally {
 
-                location.href = "/";
+                /*
+                   Always leave dashboard,
+                   even if API request fails.
+                */
+
+                window.location.replace(
+                    "/"
+                );
             }
         }
     );
 
 
-// =========================================================
-// AUDIT
-// =========================================================
+/* =========================================================
+   AUDIT LOGS
+   ========================================================= */
 
 async function loadAudit() {
 
@@ -2278,7 +2427,12 @@ async function loadAudit() {
                 "/api/audit"
             );
 
-        renderAudit(data);
+
+        renderAudit(
+            Array.isArray(data)
+                ? data
+                : []
+        );
 
     } catch (error) {
 
@@ -2409,7 +2563,6 @@ function renderAudit(logs = []) {
 
 
         item.innerHTML = `
-
             <div class="audit-dot"></div>
 
             <div class="audit-content">
@@ -2423,9 +2576,7 @@ function renderAudit(logs = []) {
                 </div>
 
                 <div class="audit-user">
-                    ${escapeHtml(
-                        user
-                    )}
+                    ${escapeHtml(user)}
                 </div>
 
                 ${
@@ -2439,7 +2590,7 @@ function renderAudit(logs = []) {
                                 )}
                                 members assigned
                             </div>
-                          `
+                        `
                         : ""
                 }
 
@@ -2452,7 +2603,7 @@ function renderAudit(logs = []) {
                                     log.ip
                                 )}
                             </div>
-                          `
+                        `
                         : ""
                 }
 
@@ -2466,6 +2617,7 @@ function renderAudit(logs = []) {
                     )
                 )}"
             >
+
                 ${escapeHtml(
                     relativeTime(
                         timestamp
@@ -2479,21 +2631,19 @@ function renderAudit(logs = []) {
                         timestamp
                     )
                 )}
-            </div>
 
+            </div>
         `;
 
 
-        container.appendChild(
-            item
-        );
+        container.appendChild(item);
     });
 }
 
 
-// =========================================================
-// CUSTOM DATE PICKER
-// =========================================================
+/* =========================================================
+   CUSTOM DATE PICKER ELEMENTS
+   ========================================================= */
 
 const datePickerButton =
     document.getElementById(
@@ -2524,25 +2674,11 @@ const dueDateInput =
     document.getElementById(
         "dueDate"
     );
-const canvaUrl =
-    document.getElementById(
-        "taskCanvaUrl"
-    )?.value.trim() || "";
-
-const assetsFolderUrl =
-    document.getElementById(
-        "taskAssetsFolderUrl"
-    )?.value.trim() || "";
-
-const referenceUrl =
-    document.getElementById(
-        "taskReferenceUrl"
-    )?.value.trim() || "";
 
 
-// =========================================================
-// OPEN / CLOSE
-// =========================================================
+/* =========================================================
+   DATE PICKER OPEN / CLOSE
+   ========================================================= */
 
 datePickerButton
     ?.addEventListener(
@@ -2551,13 +2687,16 @@ datePickerButton
 
             event.stopPropagation();
 
+
             if (!datePicker) {
                 return;
             }
 
+
             datePicker.classList.toggle(
                 "hidden"
             );
+
 
             datePickerButton.classList.toggle(
                 "active",
@@ -2566,14 +2705,15 @@ datePickerButton
                 )
             );
 
+
             renderDatePicker();
         }
     );
 
 
-// =========================================================
-// PREVIOUS MONTH
-// =========================================================
+/* =========================================================
+   PREVIOUS MONTH
+   ========================================================= */
 
 document
     .getElementById(
@@ -2585,18 +2725,20 @@ document
 
             event.stopPropagation();
 
+
             pickerDate.setMonth(
                 pickerDate.getMonth() - 1
             );
+
 
             renderDatePicker();
         }
     );
 
 
-// =========================================================
-// NEXT MONTH
-// =========================================================
+/* =========================================================
+   NEXT MONTH
+   ========================================================= */
 
 document
     .getElementById(
@@ -2608,18 +2750,20 @@ document
 
             event.stopPropagation();
 
+
             pickerDate.setMonth(
                 pickerDate.getMonth() + 1
             );
+
 
             renderDatePicker();
         }
     );
 
 
-// =========================================================
-// TODAY
-// =========================================================
+/* =========================================================
+   TODAY
+   ========================================================= */
 
 document
     .getElementById(
@@ -2631,38 +2775,40 @@ document
 
             event.stopPropagation();
 
+
             const today =
                 new Date();
 
+
             pickerDate =
                 new Date(today);
+
 
             setSelectedDate(
                 today
             );
 
-            if (datePicker) {
 
-                datePicker.classList.add(
+            datePicker
+                ?.classList.add(
                     "hidden"
                 );
-            }
 
-            if (datePickerButton) {
 
-                datePickerButton.classList.remove(
+            datePickerButton
+                ?.classList.remove(
                     "active"
                 );
-            }
+
 
             renderDatePicker();
         }
     );
 
 
-// =========================================================
-// CLEAR DATE
-// =========================================================
+/* =========================================================
+   CLEAR DATE
+   ========================================================= */
 
 document
     .getElementById(
@@ -2674,29 +2820,31 @@ document
 
             event.stopPropagation();
 
+
             selectedDateValue =
                 null;
 
-            if (dueDateInput) {
 
+            if (dueDateInput) {
                 dueDateInput.value =
                     "";
             }
 
-            if (selectedDate) {
 
+            if (selectedDate) {
                 selectedDate.textContent =
                     "Select due date";
             }
+
 
             renderDatePicker();
         }
     );
 
 
-// =========================================================
-// CLOSE OUTSIDE
-// =========================================================
+/* =========================================================
+   CLOSE DATE PICKER OUTSIDE
+   ========================================================= */
 
 document.addEventListener(
     "click",
@@ -2725,9 +2873,9 @@ document.addEventListener(
 );
 
 
-// =========================================================
-// RENDER DATE PICKER
-// =========================================================
+/* =========================================================
+   RENDER DATE PICKER
+   ========================================================= */
 
 function renderDatePicker() {
 
@@ -2785,9 +2933,9 @@ function renderDatePicker() {
         ).getDate();
 
 
-    // -----------------------------------------------------
-    // PREVIOUS MONTH
-    // -----------------------------------------------------
+    /* -----------------------------------------------------
+       PREVIOUS MONTH DAYS
+       ----------------------------------------------------- */
 
     for (
         let i = firstDay - 1;
@@ -2810,9 +2958,9 @@ function renderDatePicker() {
     }
 
 
-    // -----------------------------------------------------
-    // CURRENT MONTH
-    // -----------------------------------------------------
+    /* -----------------------------------------------------
+       CURRENT MONTH
+       ----------------------------------------------------- */
 
     const today =
         new Date();
@@ -2844,6 +2992,8 @@ function renderDatePicker() {
             );
 
 
+        /* TODAY */
+
         if (
             currentDay.getDate() ===
                 today.getDate() &&
@@ -2858,6 +3008,8 @@ function renderDatePicker() {
             );
         }
 
+
+        /* SELECTED DATE */
 
         if (
             selectedDateValue &&
@@ -2881,17 +3033,22 @@ function renderDatePicker() {
 
                 event.stopPropagation();
 
+
                 setSelectedDate(
                     currentDay
                 );
 
-                datePicker?.classList.add(
-                    "hidden"
-                );
 
-                datePickerButton?.classList.remove(
-                    "active"
-                );
+                datePicker
+                    ?.classList.add(
+                        "hidden"
+                    );
+
+
+                datePickerButton
+                    ?.classList.remove(
+                        "active"
+                    );
             }
         );
 
@@ -2900,9 +3057,9 @@ function renderDatePicker() {
     }
 
 
-    // -----------------------------------------------------
-    // REMAINING
-    // -----------------------------------------------------
+    /* -----------------------------------------------------
+       NEXT MONTH PADDING
+       ----------------------------------------------------- */
 
     const totalCells =
         firstDay +
@@ -2938,9 +3095,9 @@ function renderDatePicker() {
 }
 
 
-// =========================================================
-// SET DATE
-// =========================================================
+/* =========================================================
+   SET SELECTED DATE
+   ========================================================= */
 
 function setSelectedDate(date) {
 
@@ -2967,6 +3124,7 @@ function setSelectedDate(date) {
         const year =
             date.getFullYear();
 
+
         const month =
             String(
                 date.getMonth() + 1
@@ -2974,6 +3132,7 @@ function setSelectedDate(date) {
                 2,
                 "0"
             );
+
 
         const day =
             String(
@@ -2990,13 +3149,14 @@ function setSelectedDate(date) {
 }
 
 
-// =========================================================
-// START
-// =========================================================
+/* =========================================================
+   START APPLICATION
+   ========================================================= */
 
 document.addEventListener(
     "DOMContentLoaded",
     () => {
+
         init();
     }
 );
