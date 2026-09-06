@@ -315,19 +315,31 @@ async function initializePushNotifications() {
     }
 
 
+   if (Notification.permission === "default") {
+    showPushPermissionModal();
+}
+document.getElementById("skipPushBtn")?.addEventListener("click", () => {
+    localStorage.setItem("pushPromptDismissed", "true");
+    hidePushPermissionModal();
+});
+function initializePushNotifications() {
+
+    if (!("Notification" in window)) {
+        return;
+    }
+
+    if (Notification.permission === "granted") {
+        subscribeToPush();
+        return;
+    }
+
     if (
-        Notification.permission ===
-        "default" &&
-        !localStorage.getItem(
-            "pushPermissionAsked"
-        )
+        Notification.permission === "default" &&
+        localStorage.getItem("pushPromptDismissed") !== "true"
     ) {
-
         showPushPermissionModal();
-
     }
 }
-
 
 document
     .getElementById(
