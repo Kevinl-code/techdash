@@ -883,7 +883,70 @@ document
         }
     );
 
+const resourcesEl =
+    document.getElementById(
+        "modalTaskResources"
+    );
 
+if (resourcesEl) {
+
+    const resourceButtons = [];
+
+    if (task.canva_url) {
+
+        resourceButtons.push(`
+            <a
+                href="${escapeHtml(task.canva_url)}"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="task-resource-btn"
+            >
+                🎨 Open Canva Design ↗
+            </a>
+        `);
+    }
+
+    if (task.assets_folder_url) {
+
+        resourceButtons.push(`
+            <a
+                href="${escapeHtml(task.assets_folder_url)}"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="task-resource-btn"
+            >
+                📁 Open Asset Folder ↗
+            </a>
+        `);
+    }
+
+    if (task.reference_url) {
+
+        resourceButtons.push(`
+            <a
+                href="${escapeHtml(task.reference_url)}"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="task-resource-btn"
+            >
+                🔗 Open Reference ↗
+            </a>
+        `);
+    }
+
+    resourcesEl.innerHTML =
+        resourceButtons.length
+            ? `
+                <p class="eyebrow">
+                    TASK RESOURCES
+                </p>
+
+                <div class="modal-resource-list">
+                    ${resourceButtons.join("")}
+                </div>
+              `
+            : "";
+}
 document
     .getElementById("taskModal")
     ?.addEventListener(
