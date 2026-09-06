@@ -257,20 +257,28 @@ function showPushPermissionModal() {
 
 
 function hidePushPermissionModal() {
+    const modal = document.getElementById("pushPermissionModal");
 
-    const modal =
-        document.getElementById(
-            "pushPermissionModal"
-        );
+    if (modal) {
+        modal.classList.remove("show");
+        modal.style.display = "none";
+    }
+}
 
-    if (!modal) {
-        return;
+document.addEventListener("DOMContentLoaded", () => {
+
+    const closeBtn = document.getElementById("closePushModal");
+    const skipBtn = document.getElementById("skipPushBtn");
+
+    if (closeBtn) {
+        closeBtn.addEventListener("click", hidePushPermissionModal);
     }
 
-    modal.classList.add(
-        "hidden"
-    );
-}
+    if (skipBtn) {
+        skipBtn.addEventListener("click", hidePushPermissionModal);
+    }
+
+});
 
 
 async function initializePushNotifications() {
