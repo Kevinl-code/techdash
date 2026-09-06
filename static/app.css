@@ -1931,6 +1931,10 @@
 }
 
 
+.push-permission-modal.show {
+    display: flex;
+}
+
 .push-permission-card {
     width: min(
         440px,
