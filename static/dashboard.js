@@ -61,32 +61,49 @@ async function registerPWA() {
     if (!("serviceWorker" in navigator)) {
 
         console.warn(
-            "Service Worker is not supported."
+            "Service Workers are not supported."
         );
 
         return null;
     }
 
+
     try {
 
-        pushRegistration =
+        console.log(
+            "[PWA] Registering Service Worker..."
+        );
+
+
+        const registration =
             await navigator.serviceWorker.register(
-                "/static/sw.js",
+                "/sw.js",
                 {
                     scope: "/"
                 }
             );
 
+
         console.log(
-            "PWA service worker registered."
+            "[PWA] Service Worker registered:",
+            registration.scope
         );
 
-        return pushRegistration;
+
+        await navigator.serviceWorker.ready;
+
+
+        console.log(
+            "[PWA] Service Worker is ready."
+        );
+
+
+        return registration;
 
     } catch (error) {
 
         console.error(
-            "Service Worker registration failed:",
+            "[PWA] Service Worker registration failed:",
             error
         );
 
@@ -256,6 +273,234 @@ function showPushPermissionModal() {
 }
 
 
+async function enablePushNotifications() {
+
+    console.log(
+        "[PUSH] Enable button clicked."
+    );
+
+
+    try {
+
+        /*
+        ================================================
+        STEP 1
+        ================================================
+        */
+
+        const registration =
+            await registerPWA();
+
+
+        if (!registration) {
+
+            throw new Error(
+                "Service Worker could not be registered."
+            );
+        }
+
+
+        /*
+        ================================================
+        STEP 2
+        REQUEST PERMISSION
+        ================================================
+        */
+
+        console.log(
+            "[PUSH] Current permission:",
+            Notification.permission
+        );
+
+
+        let permission =
+            Notification.permission;
+
+
+        if (permission === "default") {
+
+            permission =
+                await Notification.requestPermission();
+        }
+
+
+        console.log(
+            "[PUSH] Permission result:",
+            permission
+        );
+
+
+        if (permission !== "granted") {
+
+            if (permission === "denied") {
+
+                alert(
+                    "Notifications are blocked for this website. Please allow notifications in your browser site settings."
+                );
+
+            }
+
+            return;
+        }
+
+
+        /*
+        ================================================
+        STEP 3
+        GET VAPID PUBLIC KEY
+        ================================================
+        */
+
+        const response =
+            await fetch(
+                "/api/push/public-key",
+                {
+                    credentials: "same-origin"
+                }
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "Could not retrieve push public key."
+            );
+        }
+
+
+        const data =
+            await response.json();
+
+
+        if (!data.public_key) {
+
+            throw new Error(
+                "VAPID public key is missing."
+            );
+        }
+
+
+        /*
+        ================================================
+        STEP 4
+        SUBSCRIBE
+        ================================================
+        */
+
+        const subscription =
+            await registration.pushManager.subscribe({
+
+                userVisibleOnly: true,
+
+                applicationServerKey:
+                    urlBase64ToUint8Array(
+                        data.public_key
+                    )
+            });
+
+
+        console.log(
+            "[PUSH] Subscription created:",
+            subscription
+        );
+
+
+        /*
+        ================================================
+        STEP 5
+        SAVE SUBSCRIPTION TO FLASK
+        ================================================
+        */
+
+        const subscriptionJSON =
+            subscription.toJSON();
+
+
+        const saveResponse =
+            await fetch(
+                "/api/push/subscribe",
+                {
+                    method: "POST",
+
+                    credentials: "same-origin",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        endpoint:
+                            subscriptionJSON.endpoint,
+
+                        keys: {
+                            p256dh:
+                                subscriptionJSON.keys.p256dh,
+
+                            auth:
+                                subscriptionJSON.keys.auth
+                        },
+
+                        user_agent:
+                            navigator.userAgent
+                    })
+                }
+            );
+
+
+        const saveData =
+            await saveResponse.json();
+
+
+        if (!saveResponse.ok) {
+
+            throw new Error(
+                saveData.error ||
+                "Could not save notification subscription."
+            );
+        }
+
+
+        console.log(
+            "[PUSH] Subscription saved successfully."
+        );
+
+
+        /*
+        ================================================
+        SUCCESS
+        ================================================
+        */
+
+        alert(
+            "🔔 Notifications enabled successfully!"
+        );
+
+
+        hidePushPermissionModal?.();
+
+
+        localStorage.setItem(
+            "push_notifications_enabled",
+            "true"
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "[PUSH] Enable failed:",
+            error
+        );
+
+
+        alert(
+            error.message ||
+            "Could not enable notifications."
+        );
+    }
+}
+
 function hidePushPermissionModal() {
     const modal = document.getElementById("pushPermissionModal");
 
@@ -282,24 +527,49 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 async function initializePushNotifications() {
+   console.log(
+        "[PUSH] Initializing..."
+    );
 
-    await registerPWA();
 
     if (!("Notification" in window)) {
+
+        console.warn(
+            "[PUSH] Notifications are not supported."
+        );
+
         return;
     }
 
-    if (Notification.permission === "granted") {
-        try {
-            await subscribeToPush();
-        } catch (error) {
-            console.error(
-                "Automatic push subscription failed:",
-                error
-            );
-        }
+
+    if (!("PushManager" in window)) {
+
+        console.warn(
+            "[PUSH] Push API is not supported."
+        );
+
         return;
     }
+
+
+    const registration =
+        await registerPWA();
+
+
+    if (!registration) {
+
+        console.error(
+            "[PUSH] Cannot initialize because Service Worker failed."
+        );
+
+        return;
+    }
+
+
+    console.log(
+        "[PUSH] Service Worker ready."
+    );
+
 
     if (
         Notification.permission === "default" &&
@@ -310,12 +580,11 @@ async function initializePushNotifications() {
 }
 
 document
-    .getElementById(
-        "enablePushBtn"
-    )
+    .getElementById("enablePushBtn")
     ?.addEventListener(
         "click",
-        async () => {
+        enablePushNotifications
+    ), async () => {
 
             const button =
                 document.getElementById(
