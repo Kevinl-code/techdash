@@ -727,7 +727,9 @@ def create_task():
     title = (data.get("title") or "").strip()
     description = (data.get("description") or "").strip()
     due_date = (data.get("due_date") or "").strip() or None
-
+    canva_url = (data.get("canva_url") or "").strip() or None
+    assets_folder_url = (data.get("assets_folder_url") or "").strip() or None
+    reference_url = (data.get("reference_url") or "").strip() or None
     assigned_to = normalize_member_ids(data.get("assigned_to"))
 
     # -----------------------------------------------------
@@ -826,6 +828,9 @@ def create_task():
         "title": title,
         "description": description,
         "due_date": due_date,
+        "canva_url": canva_url,
+        "assets_folder_url": assets_folder_url,
+        "reference_url": reference_url,
         "status": "Assigned",
         "created_by": user["id"],
     }
