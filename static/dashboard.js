@@ -285,51 +285,19 @@ async function initializePushNotifications() {
 
     await registerPWA();
 
-
-    if (
-        !("Notification" in window)
-    ) {
-        return;
-    }
-
-
-    if (
-        Notification.permission ===
-        "granted"
-    ) {
-
-        try {
-
-            await subscribeToPush();
-
-        } catch (error) {
-
-            console.error(
-                "Automatic push subscription failed:",
-                error
-            );
-
-        }
-
-        return;
-    }
-
-
-   if (Notification.permission === "default") {
-    showPushPermissionModal();
-}
-document.getElementById("skipPushBtn")?.addEventListener("click", () => {
-    localStorage.setItem("pushPromptDismissed", "true");
-    hidePushPermissionModal();
-});
-function initializePushNotifications() {
-
     if (!("Notification" in window)) {
         return;
     }
 
     if (Notification.permission === "granted") {
-        subscribeToPush();
+        try {
+            await subscribeToPush();
+        } catch (error) {
+            console.error(
+                "Automatic push subscription failed:",
+                error
+            );
+        }
         return;
     }
 
@@ -563,6 +531,7 @@ function showInAppNotification(
         10000
     );
 }
+
 /* =========================================================
    HTML ESCAPE
    ========================================================= */
@@ -610,10 +579,6 @@ function formatDateOnly(value) {
     if (!value) {
         return "No due date";
     }
-
-    /*
-       Prevent timezone shifting for YYYY-MM-DD
-    */
 
     if (
         typeof value === "string" &&
@@ -726,33 +691,9 @@ function getStatusClass(status) {
 
 
 /* =========================================================
-   INITIALIZATION
+   NOTIFICATION PANEL LOGIC
    ========================================================= */
 
-async function init() {
-    console.log("Dashboard initialization started.");
-
-    try {
-        me = await api("/api/me");
-        
-
-        console.log(
-            "Authenticated user:",
-            me
-        );
-        await initializePushNotifications();
-
-    } catch (error) {
-        console.error(
-            "Authentication check failed:",
-            error
-        );
-
-        window.location.href = "/";
-        return;
-    }
-   
-   
 function renderNotificationPanel() {
 
     const list =
@@ -1087,6 +1028,33 @@ document
 
         }
     );
+
+
+/* =========================================================
+   INITIALIZATION
+   ========================================================= */
+
+async function init() {
+    console.log("Dashboard initialization started.");
+
+    try {
+        me = await api("/api/me");
+
+        console.log(
+            "Authenticated user:",
+            me
+        );
+        await initializePushNotifications();
+
+    } catch (error) {
+        console.error(
+            "Authentication check failed:",
+            error
+        );
+
+        window.location.href = "/";
+        return;
+    }
 
     /* -----------------------------------------------------
        USER INFORMATION
@@ -2855,9 +2823,6 @@ document
 
             /* -------------------------------------------------
                FORM VALUES
-               IMPORTANT:
-               Read resource URLs HERE,
-               not globally.
                ------------------------------------------------- */
 
             const title =
@@ -3262,11 +3227,6 @@ document
                 );
 
             } finally {
-
-                /*
-                   Always leave dashboard,
-                   even if API request fails.
-                */
 
                 window.location.replace(
                     "/"
