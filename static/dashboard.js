@@ -44,7 +44,505 @@ async function api(url, options = {}) {
     return data;
 }
 
+/* =========================================================
+   PWA / PUSH NOTIFICATIONS
+   ========================================================= */
 
+let pushRegistration = null;
+let pushSubscription = null;
+
+
+/* =========================================================
+   REGISTER SERVICE WORKER
+   ========================================================= */
+
+async function registerPWA() {
+
+    if (!("serviceWorker" in navigator)) {
+
+        console.warn(
+            "Service Worker is not supported."
+        );
+
+        return null;
+    }
+
+    try {
+
+        pushRegistration =
+            await navigator.serviceWorker.register(
+                "/static/sw.js",
+                {
+                    scope: "/"
+                }
+            );
+
+        console.log(
+            "PWA service worker registered."
+        );
+
+        return pushRegistration;
+
+    } catch (error) {
+
+        console.error(
+            "Service Worker registration failed:",
+            error
+        );
+
+        return null;
+    }
+}
+
+async function getPushPublicKey() {
+
+    const result =
+        await api(
+            "/api/push/public-key"
+        );
+
+    return result.public_key;
+}
+
+function urlBase64ToUint8Array(
+    base64String
+) {
+
+    const padding =
+        "=".repeat(
+            (4 - base64String.length % 4) % 4
+        );
+
+    const base64 =
+        (
+            base64String +
+            padding
+        )
+            .replace(/-/g, "+")
+            .replace(/_/g, "/");
+
+    const rawData =
+        window.atob(base64);
+
+    return Uint8Array.from(
+        [...rawData].map(
+            char =>
+                char.charCodeAt(0)
+        )
+    );
+}
+
+async function subscribeToPush() {
+
+    if (
+        !("Notification" in window)
+    ) {
+
+        throw new Error(
+            "This browser does not support notifications."
+        );
+
+    }
+
+
+    if (
+        !("serviceWorker" in navigator)
+    ) {
+
+        throw new Error(
+            "Service Worker is not supported."
+        );
+
+    }
+
+
+    const registration =
+        pushRegistration ||
+        await registerPWA();
+
+
+    if (!registration) {
+
+        throw new Error(
+            "Could not register PWA."
+        );
+
+    }
+
+
+    const permission =
+        await Notification.requestPermission();
+
+
+    if (
+        permission !== "granted"
+    ) {
+
+        throw new Error(
+            "Notification permission was not granted."
+        );
+
+    }
+
+
+    const publicKey =
+        await getPushPublicKey();
+
+
+    pushSubscription =
+        await registration.pushManager.subscribe({
+
+            userVisibleOnly: true,
+
+            applicationServerKey:
+                urlBase64ToUint8Array(
+                    publicKey
+                )
+
+        });
+
+
+    await api(
+        "/api/push/subscribe",
+        {
+
+            method: "POST",
+
+            headers: {
+                "Content-Type":
+                    "application/json"
+            },
+
+            body: JSON.stringify({
+
+                subscription:
+                    pushSubscription.toJSON()
+
+            })
+
+        }
+    );
+
+
+    localStorage.setItem(
+        "pushNotificationsEnabled",
+        "true"
+    );
+
+
+    console.log(
+        "Push notifications enabled."
+    );
+
+
+    return true;
+}
+
+
+function showPushPermissionModal() {
+
+    const modal =
+        document.getElementById(
+            "pushPermissionModal"
+        );
+
+    if (!modal) {
+        return;
+    }
+
+    modal.classList.remove(
+        "hidden"
+    );
+}
+
+
+function hidePushPermissionModal() {
+
+    const modal =
+        document.getElementById(
+            "pushPermissionModal"
+        );
+
+    if (!modal) {
+        return;
+    }
+
+    modal.classList.add(
+        "hidden"
+    );
+}
+
+
+async function initializePushNotifications() {
+
+    await registerPWA();
+
+
+    if (
+        !("Notification" in window)
+    ) {
+        return;
+    }
+
+
+    if (
+        Notification.permission ===
+        "granted"
+    ) {
+
+        try {
+
+            await subscribeToPush();
+
+        } catch (error) {
+
+            console.error(
+                "Automatic push subscription failed:",
+                error
+            );
+
+        }
+
+        return;
+    }
+
+
+    if (
+        Notification.permission ===
+        "default" &&
+        !localStorage.getItem(
+            "pushPermissionAsked"
+        )
+    ) {
+
+        showPushPermissionModal();
+
+    }
+}
+
+
+document
+    .getElementById(
+        "enablePushBtn"
+    )
+    ?.addEventListener(
+        "click",
+        async () => {
+
+            const button =
+                document.getElementById(
+                    "enablePushBtn"
+                );
+
+
+            if (button) {
+
+                button.disabled = true;
+
+                button.textContent =
+                    "Enabling...";
+
+            }
+
+
+            try {
+
+                await subscribeToPush();
+
+                localStorage.setItem(
+                    "pushPermissionAsked",
+                    "true"
+                );
+
+                hidePushPermissionModal();
+
+
+                showInAppNotification(
+                    "Notifications Enabled",
+                    "You will now receive task notifications.",
+                    "success"
+                );
+
+            } catch (error) {
+
+                console.error(
+                    "Push permission error:",
+                    error
+                );
+
+                alert(
+                    error.message ||
+                    "Could not enable notifications."
+                );
+
+            } finally {
+
+                if (button) {
+
+                    button.disabled = false;
+
+                    button.textContent =
+                        "Enable Notifications";
+
+                }
+
+            }
+
+        }
+    );
+
+document
+    .getElementById(
+        "skipPushBtn"
+    )
+    ?.addEventListener(
+        "click",
+        () => {
+
+            localStorage.setItem(
+                "pushPermissionAsked",
+                "true"
+            );
+
+            hidePushPermissionModal();
+
+        }
+    );
+
+
+function showInAppNotification(
+    title,
+    message,
+    type = "info",
+    taskId = null
+) {
+
+    let container =
+        document.getElementById(
+            "inAppNotificationContainer"
+        );
+
+
+    if (!container) {
+
+        container =
+            document.createElement(
+                "div"
+            );
+
+        container.id =
+            "inAppNotificationContainer";
+
+        container.className =
+            "in-app-notification-container";
+
+        document.body.appendChild(
+            container
+        );
+
+    }
+
+
+    const notification =
+        document.createElement(
+            "div"
+        );
+
+    notification.className =
+        `in-app-notification ${type}`;
+
+
+    notification.innerHTML = `
+
+        <div class="in-app-notification-icon">
+            🔔
+        </div>
+
+        <div class="in-app-notification-content">
+
+            <strong>
+                ${escapeHtml(title)}
+            </strong>
+
+            <p>
+                ${escapeHtml(message)}
+            </p>
+
+        </div>
+
+        <button
+            type="button"
+            class="in-app-notification-close"
+        >
+            ×
+        </button>
+
+    `;
+
+
+    notification
+        .querySelector(
+            ".in-app-notification-close"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
+
+                notification.remove();
+
+            }
+        );
+
+
+    if (taskId) {
+
+        notification.addEventListener(
+            "click",
+            event => {
+
+                if (
+                    event.target.closest(
+                        ".in-app-notification-close"
+                    )
+                ) {
+                    return;
+                }
+
+                const task =
+                    tasks.find(
+                        item =>
+                            String(item.id) ===
+                            String(taskId)
+                    );
+
+                if (task) {
+
+                    openTaskModal(task);
+
+                }
+
+                notification.remove();
+
+            }
+        );
+
+    }
+
+
+    container.appendChild(
+        notification
+    );
+
+
+    setTimeout(
+        () => {
+
+            notification.remove();
+
+        },
+        10000
+    );
+}
 /* =========================================================
    HTML ESCAPE
    ========================================================= */
