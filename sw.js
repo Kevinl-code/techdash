@@ -176,13 +176,34 @@ FETCH
 =========================================================
 */
 
-self.addEventListener('fetch', (event) => {
+self.addEventListener("fetch", (event) => {
+  // Optional: Skip non-GET requests or specific API calls
+  if (event.request.method !== "GET") return;
+
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
+      // 1. Return cached version if found
       if (cachedResponse) {
         return cachedResponse;
       }
-      return fetch(event.request); // Fallback to network if cache misses
+
+      // 2. Fall back to network fetch
+      return fetch(event.request)
+        .then((networkResponse) => {
+          return networkResponse;
+        })
+        .catch((error) => {
+          console.error("[SW] Fetch failed; returning offline fallback:", error);
+
+          // 3. Always return a valid Response on network failure
+          return (
+            caches.match("/offline.html") ||
+            new Response("Network error occurred. Please check your connection.", {
+              status: 503,
+              headers: { "Content-Type": "text/plain" }
+            })
+          );
+        });
     })
   );
 });
