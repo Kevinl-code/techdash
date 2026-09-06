@@ -1592,3 +1592,428 @@
     box-shadow:
         0 0 0 3px rgba(255, 255, 255, 0.04);
 }
+
+
+/* =========================================================
+   PWA NOTIFICATIONS
+   ========================================================= */
+
+.notification-bell {
+    position: relative;
+    width: 42px;
+    height: 42px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 1px solid rgba(255,255,255,.10);
+    border-radius: 12px;
+
+    background: rgba(255,255,255,.045);
+    color: #fff;
+
+    cursor: pointer;
+
+    transition:
+        transform .2s ease,
+        background .2s ease;
+}
+
+.notification-bell:hover {
+    transform: translateY(-1px);
+    background: rgba(255,255,255,.08);
+}
+
+
+.notification-badge {
+    position: absolute;
+
+    top: -5px;
+    right: -5px;
+
+    min-width: 19px;
+    height: 19px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 0 5px;
+
+    border-radius: 999px;
+
+    background: #ef4444;
+    color: #fff;
+
+    font-size: 10px;
+    font-weight: 700;
+
+    border: 2px solid #08090d;
+}
+
+
+.notification-panel {
+    position: fixed;
+
+    top: 76px;
+    right: 24px;
+
+    width: min(
+        390px,
+        calc(100vw - 32px)
+    );
+
+    max-height: 520px;
+
+    z-index: 5000;
+
+    overflow: hidden;
+
+    border: 1px solid rgba(255,255,255,.10);
+    border-radius: 18px;
+
+    background: rgba(15,17,24,.97);
+
+    box-shadow:
+        0 25px 80px rgba(0,0,0,.45);
+}
+
+
+.notification-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 16px;
+
+    border-bottom:
+        1px solid rgba(255,255,255,.08);
+}
+
+
+.notification-list {
+    max-height: 440px;
+    overflow-y: auto;
+}
+
+
+.notification-item {
+    display: flex;
+    gap: 12px;
+
+    padding: 15px;
+
+    cursor: pointer;
+
+    border-bottom:
+        1px solid rgba(255,255,255,.06);
+
+    transition:
+        background .2s ease;
+}
+
+
+.notification-item:hover {
+    background:
+        rgba(255,255,255,.045);
+}
+
+
+.notification-item.unread {
+    background:
+        rgba(255,255,255,.025);
+}
+
+
+.notification-item-icon {
+    width: 36px;
+    height: 36px;
+
+    flex: 0 0 36px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 10px;
+
+    background:
+        rgba(255,255,255,.06);
+}
+
+
+.notification-item-content {
+    min-width: 0;
+}
+
+
+.notification-item-content strong {
+    display: block;
+
+    font-size: 13px;
+
+    color: #fff;
+}
+
+
+.notification-item-content p {
+    margin: 4px 0;
+
+    font-size: 12px;
+
+    color: rgba(255,255,255,.65);
+}
+
+
+.notification-item-content small {
+    color: rgba(255,255,255,.38);
+}
+
+
+.notification-empty {
+    padding: 32px 18px;
+
+    text-align: center;
+
+    color:
+        rgba(255,255,255,.42);
+}
+
+
+/* =========================================================
+   IN-APP TOAST
+   ========================================================= */
+
+.in-app-notification-container {
+    position: fixed;
+
+    top: 92px;
+    right: 24px;
+
+    z-index: 9000;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 12px;
+
+    width: min(
+        390px,
+        calc(100vw - 32px)
+    );
+}
+
+
+.in-app-notification {
+    display: flex;
+    align-items: flex-start;
+
+    gap: 12px;
+
+    padding: 15px;
+
+    border:
+        1px solid rgba(255,255,255,.10);
+
+    border-radius: 16px;
+
+    background:
+        rgba(18,20,28,.96);
+
+    box-shadow:
+        0 20px 60px rgba(0,0,0,.40);
+
+    cursor: pointer;
+
+    animation:
+        notificationSlideIn
+        .3s ease;
+}
+
+
+.in-app-notification-icon {
+    width: 38px;
+    height: 38px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    flex: 0 0 38px;
+
+    border-radius: 12px;
+
+    background:
+        rgba(255,255,255,.07);
+}
+
+
+.in-app-notification-content {
+    flex: 1;
+}
+
+
+.in-app-notification-content strong {
+    display: block;
+
+    font-size: 13px;
+
+    color: #fff;
+}
+
+
+.in-app-notification-content p {
+    margin: 4px 0 0;
+
+    font-size: 12px;
+
+    line-height: 1.5;
+
+    color:
+        rgba(255,255,255,.62);
+}
+
+
+.in-app-notification-close {
+    border: 0;
+    background: transparent;
+
+    color:
+        rgba(255,255,255,.45);
+
+    cursor: pointer;
+
+    font-size: 18px;
+}
+
+
+@keyframes notificationSlideIn {
+
+    from {
+        opacity: 0;
+        transform:
+            translateX(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform:
+            translateX(0);
+    }
+
+}
+
+
+/* =========================================================
+   PUSH PERMISSION MODAL
+   ========================================================= */
+
+.push-permission-modal {
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 10000;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    padding: 20px;
+
+    background:
+        rgba(0,0,0,.70);
+
+    backdrop-filter:
+        blur(12px);
+}
+
+
+.push-permission-card {
+    width: min(
+        440px,
+        100%
+    );
+
+    padding: 30px;
+
+    text-align: center;
+
+    border:
+        1px solid rgba(255,255,255,.10);
+
+    border-radius: 24px;
+
+    background:
+        rgba(18,20,28,.98);
+
+    box-shadow:
+        0 30px 100px rgba(0,0,0,.55);
+}
+
+
+.push-permission-icon {
+    width: 64px;
+    height: 64px;
+
+    margin: 0 auto 18px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 20px;
+
+    background:
+        rgba(255,255,255,.07);
+
+    font-size: 28px;
+}
+
+
+.push-permission-card h3 {
+    margin: 0 0 10px;
+
+    color: #fff;
+}
+
+
+.push-permission-card p {
+    margin: 0 0 24px;
+
+    color:
+        rgba(255,255,255,.60);
+
+    line-height: 1.6;
+}
+
+
+.push-permission-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+
+@media (max-width: 600px) {
+
+    .notification-panel {
+        top: 70px;
+        right: 16px;
+    }
+
+    .in-app-notification-container {
+        top: 76px;
+        right: 16px;
+        left: 16px;
+
+        width: auto;
+    }
+
+    .push-permission-card {
+        padding: 24px;
+    }
+
+}
