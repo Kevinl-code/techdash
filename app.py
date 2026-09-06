@@ -342,7 +342,329 @@ def head_required(fn):
 
     return wrapper
 
+# =========================================================
+# PWA - GET PUBLIC VAPID KEY
+# =========================================================
 
+@app.get("/api/push/public-key")
+@login_required
+def get_push_public_key():
+
+    if not VAPID_PUBLIC_KEY:
+        return jsonify({
+            "error": "Push notification service is not configured"
+        }), 503
+
+    return jsonify({
+        "public_key": VAPID_PUBLIC_KEY
+    })
+
+
+# =========================================================
+# PWA - SAVE PUSH SUBSCRIPTION
+# =========================================================
+
+@app.post("/api/push/subscribe")
+@login_required
+def subscribe_push():
+
+    user = current_user()
+
+    data = request.get_json(silent=True) or {}
+
+    subscription = data.get("subscription")
+
+    if not subscription:
+        return jsonify({
+            "error": "Push subscription is required"
+        }), 400
+
+    endpoint = subscription.get("endpoint")
+
+    keys = subscription.get("keys") or {}
+
+    p256dh = keys.get("p256dh")
+    auth = keys.get("auth")
+
+    if not endpoint or not p256dh or not auth:
+        return jsonify({
+            "error": "Invalid push subscription"
+        }), 400
+
+    user_agent = request.headers.get("User-Agent", "")
+
+    try:
+
+        existing = (
+            supabase
+            .table("push_subscriptions")
+            .select("id")
+            .eq("user_id", user["id"])
+            .eq("endpoint", endpoint)
+            .limit(1)
+            .execute()
+        )
+
+        payload = {
+            "user_id": user["id"],
+            "endpoint": endpoint,
+            "p256dh": p256dh,
+            "auth": auth,
+            "user_agent": user_agent,
+            "active": True,
+            "updated_at": now().isoformat()
+        }
+
+        if existing.data:
+
+            (
+                supabase
+                .table("push_subscriptions")
+                .update(payload)
+                .eq("id", existing.data[0]["id"])
+                .execute()
+            )
+
+        else:
+
+            (
+                supabase
+                .table("push_subscriptions")
+                .insert(payload)
+                .execute()
+            )
+
+        audit_log(
+            "PUSH_SUBSCRIPTION_REGISTERED",
+            user["id"]
+        )
+
+        return jsonify({
+            "ok": True
+        })
+
+    except Exception as exc:
+
+        print(
+            "PUSH SUBSCRIPTION ERROR:",
+            repr(exc),
+            flush=True
+        )
+
+        return jsonify({
+            "error": "Could not register push notifications"
+        }), 500
+
+# =========================================================
+# PWA - REMOVE PUSH SUBSCRIPTION
+# =========================================================
+
+@app.post("/api/push/unsubscribe")
+@login_required
+def unsubscribe_push():
+
+    user = current_user()
+
+    data = request.get_json(silent=True) or {}
+
+    endpoint = data.get("endpoint")
+
+    if not endpoint:
+        return jsonify({
+            "error": "Endpoint is required"
+        }), 400
+
+    try:
+
+        (
+            supabase
+            .table("push_subscriptions")
+            .update({
+                "active": False,
+                "updated_at": now().isoformat()
+            })
+            .eq("user_id", user["id"])
+            .eq("endpoint", endpoint)
+            .execute()
+        )
+
+        return jsonify({
+            "ok": True
+        })
+
+    except Exception as exc:
+
+        print(
+            "PUSH UNSUBSCRIBE ERROR:",
+            repr(exc)
+        )
+
+        return jsonify({
+            "error": "Could not disable notifications"
+        }), 500
+
+# =========================================================
+# SEND WEB PUSH
+# =========================================================
+
+def send_web_push_to_user(
+    user_id,
+    title,
+    body,
+    task_id=None,
+    notification_type="task_assigned"
+):
+
+    if not (
+        VAPID_PUBLIC_KEY
+        and VAPID_PRIVATE_KEY
+        and VAPID_SUBJECT
+    ):
+        print(
+            "WEB PUSH NOT CONFIGURED",
+            flush=True
+        )
+
+        return {
+            "success": False,
+            "error": "Push service not configured"
+        }
+
+    try:
+
+        result = (
+            supabase
+            .table("push_subscriptions")
+            .select("*")
+            .eq("user_id", user_id)
+            .eq("active", True)
+            .execute()
+        )
+
+        subscriptions = result.data or []
+
+    except Exception as exc:
+
+        print(
+            "GET PUSH SUBSCRIPTIONS ERROR:",
+            repr(exc),
+            flush=True
+        )
+
+        return {
+            "success": False,
+            "error": "Could not load push subscriptions"
+        }
+
+    if not subscriptions:
+
+        return {
+            "success": False,
+            "error": "No active push subscription"
+        }
+
+    successful = 0
+    failed = 0
+
+    payload = json.dumps({
+        "title": title,
+        "body": body,
+        "task_id": task_id,
+        "type": notification_type,
+        "url": (
+            f"/dashboard?task={task_id}"
+            if task_id
+            else "/dashboard"
+        )
+    })
+
+    for subscription in subscriptions:
+
+        push_subscription = {
+            "endpoint": subscription["endpoint"],
+            "keys": {
+                "p256dh": subscription["p256dh"],
+                "auth": subscription["auth"]
+            }
+        }
+
+        try:
+
+            webpush(
+                subscription_info=push_subscription,
+                data=payload,
+                vapid_private_key=VAPID_PRIVATE_KEY,
+                vapid_claims={
+                    "sub": VAPID_SUBJECT
+                }
+            )
+
+            successful += 1
+
+        except WebPushException as exc:
+
+            failed += 1
+
+            print(
+                "WEB PUSH ERROR:",
+                repr(exc),
+                flush=True
+            )
+
+            # Remove expired subscriptions
+            response = getattr(
+                exc,
+                "response",
+                None
+            )
+
+            status_code = getattr(
+                response,
+                "status_code",
+                None
+            )
+
+            if status_code in {404, 410}:
+
+                try:
+
+                    (
+                        supabase
+                        .table("push_subscriptions")
+                        .update({
+                            "active": False,
+                            "updated_at": now().isoformat()
+                        })
+                        .eq(
+                            "id",
+                            subscription["id"]
+                        )
+                        .execute()
+                    )
+
+                except Exception as cleanup_error:
+
+                    print(
+                        "PUSH CLEANUP ERROR:",
+                        repr(cleanup_error)
+                    )
+
+        except Exception as exc:
+
+            failed += 1
+
+            print(
+                "WEB PUSH GENERAL ERROR:",
+                repr(exc),
+                flush=True
+            )
+
+    return {
+        "success": successful > 0,
+        "sent": successful,
+        "failed": failed,
+        "total": len(subscriptions)
+    }
 # =========================================================
 # PAGE ROUTES
 # =========================================================
