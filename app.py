@@ -19,6 +19,8 @@ from flask import (
 from supabase import create_client
 
 from notifier import send_task_notification
+import json
+from pywebpush import webpush, WebPushException
 
 
 # =========================================================
@@ -61,6 +63,22 @@ supabase = create_client(
     SUPABASE_URL,
     SUPABASE_SERVICE_ROLE_KEY,
 )
+# =========================================================
+# WEB PUSH / PWA
+# =========================================================
+
+VAPID_PUBLIC_KEY = os.getenv("VAPID_PUBLIC_KEY")
+VAPID_PRIVATE_KEY = os.getenv("VAPID_PRIVATE_KEY")
+VAPID_SUBJECT = os.getenv("VAPID_SUBJECT")
+
+if not VAPID_PUBLIC_KEY:
+    print("WARNING: VAPID_PUBLIC_KEY is missing")
+
+if not VAPID_PRIVATE_KEY:
+    print("WARNING: VAPID_PRIVATE_KEY is missing")
+
+if not VAPID_SUBJECT:
+    print("WARNING: VAPID_SUBJECT is missing")
 
 
 # =========================================================
