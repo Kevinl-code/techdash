@@ -1075,7 +1075,65 @@ function renderTasks() {
                 }
 
             </div>
+            <div class="task-resources">
 
+    ${
+        task.canva_url
+            ? `
+                <a
+                    class="task-resource-btn canva-resource"
+                    href="${escapeHtml(task.canva_url)}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onclick="event.stopPropagation()"
+                >
+                    🎨
+                    <span>Open Canva</span>
+                    ↗
+                </a>
+            `
+            : ""
+    }
+
+
+    ${
+        task.assets_folder_url
+            ? `
+                <a
+                    class="task-resource-btn folder-resource"
+                    href="${escapeHtml(task.assets_folder_url)}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onclick="event.stopPropagation()"
+                >
+                    📁
+                    <span>Open Assets</span>
+                    ↗
+                </a>
+            `
+            : ""
+    }
+
+
+    ${
+        task.reference_url
+            ? `
+                <a
+                    class="task-resource-btn reference-resource"
+                    href="${escapeHtml(task.reference_url)}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onclick="event.stopPropagation()"
+                >
+                    🔗
+                    <span>Reference</span>
+                    ↗
+                </a>
+            `
+            : ""
+    }
+
+</div>
 
             <div class="task-meta">
 
@@ -1868,9 +1926,16 @@ document
                                         assignedTo,
 
                                     due_date:
-                                        dueDate
-                                })
-                        }
+                                        dueDate,
+                                    canva_url:
+                                        canvaUrl,
+                            
+                                    assets_folder_url:
+                                        assetsFolderUrl,
+                            
+                                    reference_url:
+                                        referenceUrl
+                                    })
                     );
 
 
@@ -2396,6 +2461,20 @@ const dueDateInput =
     document.getElementById(
         "dueDate"
     );
+const canvaUrl =
+    document.getElementById(
+        "taskCanvaUrl"
+    )?.value.trim() || "";
+
+const assetsFolderUrl =
+    document.getElementById(
+        "taskAssetsFolderUrl"
+    )?.value.trim() || "";
+
+const referenceUrl =
+    document.getElementById(
+        "taskReferenceUrl"
+    )?.value.trim() || "";
 
 
 // =========================================================
