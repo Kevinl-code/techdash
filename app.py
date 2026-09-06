@@ -681,6 +681,18 @@ def dashboard():
 
     return render_template("dashboard.html")
 
+@app.route("/sw.js")
+def service_worker():
+    response = send_from_directory(
+        app.root_path,
+        "sw.js",
+        mimetype="application/javascript"
+    )
+
+    response.headers["Service-Worker-Allowed"] = "/"
+
+    return response
+
 
 # =========================================================
 # HEAD LOGIN
