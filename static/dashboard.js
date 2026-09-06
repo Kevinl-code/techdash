@@ -279,6 +279,12 @@ async function enablePushNotifications() {
         "[PUSH] Enable button clicked."
     );
 
+    const button = document.getElementById("enablePushBtn");
+
+    if (button) {
+        button.disabled = true;
+        button.textContent = "Enabling...";
+    }
 
     try {
 
@@ -472,19 +478,16 @@ async function enablePushNotifications() {
         ================================================
         */
 
-        alert(
-            "🔔 Notifications enabled successfully!"
+        localStorage.setItem("pushPermissionAsked", "true");
+        localStorage.setItem("push_notifications_enabled", "true");
+
+        hidePushPermissionModal();
+
+        showInAppNotification(
+            "Notifications Enabled",
+            "You will now receive task notifications.",
+            "success"
         );
-
-
-        hidePushPermissionModal?.();
-
-
-        localStorage.setItem(
-            "push_notifications_enabled",
-            "true"
-        );
-
 
     } catch (error) {
 
@@ -498,6 +501,11 @@ async function enablePushNotifications() {
             error.message ||
             "Could not enable notifications."
         );
+    } finally {
+        if (button) {
+            button.disabled = false;
+            button.textContent = "Enable Notifications";
+        }
     }
 }
 
@@ -505,6 +513,7 @@ function hidePushPermissionModal() {
     const modal = document.getElementById("pushPermissionModal");
 
     if (modal) {
+        modal.classList.add("hidden");
         modal.classList.remove("show");
         modal.style.display = "none";
     }
@@ -584,68 +593,6 @@ document
     ?.addEventListener(
         "click",
         enablePushNotifications
-    ), async () => {
-
-            const button =
-                document.getElementById(
-                    "enablePushBtn"
-                );
-
-
-            if (button) {
-
-                button.disabled = true;
-
-                button.textContent =
-                    "Enabling...";
-
-            }
-
-
-            try {
-
-                await subscribeToPush();
-
-                localStorage.setItem(
-                    "pushPermissionAsked",
-                    "true"
-                );
-
-                hidePushPermissionModal();
-
-
-                showInAppNotification(
-                    "Notifications Enabled",
-                    "You will now receive task notifications.",
-                    "success"
-                );
-
-            } catch (error) {
-
-                console.error(
-                    "Push permission error:",
-                    error
-                );
-
-                alert(
-                    error.message ||
-                    "Could not enable notifications."
-                );
-
-            } finally {
-
-                if (button) {
-
-                    button.disabled = false;
-
-                    button.textContent =
-                        "Enable Notifications";
-
-                }
-
-            }
-
-        }
     );
 
 document
