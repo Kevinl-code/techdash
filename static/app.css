@@ -1471,3 +1471,60 @@
         opacity: 1;
     }
 }
+/* =========================================================
+   TASK RESOURCES
+   ========================================================= */
+
+.task-resource-section {
+    margin-top: 1.5rem;
+    padding: 1.25rem;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    background: rgba(255,255,255,0.025);
+}
+
+.task-resource-header {
+    margin-bottom: 1rem;
+}
+
+.task-resource-header .eyebrow {
+    margin-bottom: 0.25rem;
+}
+
+.task-resource-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.55rem 0.8rem;
+    border-radius: 10px;
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.04);
+    color: inherit;
+    transition: 0.2s ease;
+}
+
+.task-resource-btn:hover {
+    transform: translateY(-1px);
+    background: rgba(255,255,255,0.08);
+}
+
+.task-resources {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    margin: 0.9rem 0;
+}
+
+.modal-task-resources {
+    margin-top: 1.5rem;
+}
+
+.modal-resource-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    margin-top: 0.6rem;
+}
