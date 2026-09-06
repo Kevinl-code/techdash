@@ -331,6 +331,81 @@ main.dashboard {
                 rows="4"></textarea>
 
         </div>
+        <!-- TASK RESOURCES -->
+
+<div class="task-resource-section">
+
+    <div class="task-resource-header">
+
+        <p class="eyebrow">TASK RESOURCES</p>
+
+        <span class="muted">
+            Optional links for this task
+        </span>
+
+    </div>
+
+
+    <!-- CANVA -->
+
+    <div class="form-field">
+
+        <label for="taskCanvaUrl">
+            🎨 Canva Design Link
+        </label>
+
+        <input
+            id="taskCanvaUrl"
+            type="url"
+            placeholder="https://www.canva.com/design/..."
+            autocomplete="off">
+
+        <small class="muted">
+            Add the Canva design that the assigned member should work on.
+        </small>
+
+    </div>
+
+
+    <!-- ASSET FOLDER -->
+
+    <div class="form-field">
+
+        <label for="taskAssetsFolderUrl">
+            📁 Asset / Folder Link
+        </label>
+
+        <input
+            id="taskAssetsFolderUrl"
+            type="url"
+            placeholder="https://drive.google.com/..."
+            autocomplete="off">
+
+        <small class="muted">
+            Google Drive, OneDrive, Dropbox or other shared asset folder.
+        </small>
+
+    </div>
+
+
+    <!-- ADDITIONAL REFERENCE -->
+
+    <div class="form-field">
+
+        <label for="taskReferenceUrl">
+            🔗 Additional Reference
+            <span class="muted">(Optional)</span>
+        </label>
+
+        <input
+            id="taskReferenceUrl"
+            type="url"
+            placeholder="https://..."
+            autocomplete="off">
+
+    </div>
+
+</div>
 
 
         <!-- MEMBER SELECTION -->
@@ -707,7 +782,13 @@ main.dashboard {
                 <strong id="modalTaskDueDate"></strong>
             </div>
 
+           
+
         </div>
+         <div
+    id="modalTaskResources"
+    class="modal-task-resources">
+</div>
 
     </div>
 
